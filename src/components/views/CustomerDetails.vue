@@ -16,12 +16,122 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 
 import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/composables/useToast'
+import { useNotifications } from '@/composables/useNotifications'
+import { useValidation } from '@/composables/useValidation'
+import FormField from '@/components/ui/FormField.vue'
 import { AlertTriangle, CheckCircle, Plus, Mail, Trash2, Phone, Star, Building2, Users, MapPin, Receipt } from 'lucide-vue-next'
 import PageLayout from '@/components/ui/PageLayout.vue'
 
 const route = useRoute()
 const router = useRouter()
 const { success, error } = useToast()
+const { 
+  warning, 
+  success: notifySuccess, 
+  clearLocalNotificationsOfType, 
+  confirm,
+  globalSuccess,
+  error: notifyError
+} = useNotifications()
+
+// Valideringssystem
+const {
+  validateAll,
+  validateField,
+  touchField,
+  hasError,
+  getError,
+  isRequired,
+  clearErrors,
+  hasAnyErrors
+} = useValidation()
+
+// Valideringsschema för kundformulär
+const customerValidationSchema = {
+  companyName: {
+    rules: ['required'],
+    displayName: 'Företagsnamn'
+  },
+  customerNumber: {
+    rules: ['required'],
+    displayName: 'Kundnummer'
+  },
+  organizationNumber: {
+    rules: ['organizationNumber'],
+    displayName: 'Organisationsnummer'
+  },
+  companyEmail: {
+    rules: ['email'],
+    displayName: 'E-postadress'
+  },
+  website: {
+    rules: ['website'],
+    displayName: 'Webbplats'
+  },
+  switchboardNumber: {
+    rules: ['phone'],
+    displayName: 'Växelnummer'
+  },
+  streetAddress: {
+    rules: ['required'],
+    displayName: 'Gatuadress'
+  },
+  postalCode: {
+    rules: ['required', 'postalCode'],
+    displayName: 'Postnummer'
+  },
+  city: {
+    rules: ['required'],
+    displayName: 'Ort'
+  },
+  billingStreetAddress: {
+    rules: ['required'],
+    displayName: 'Faktureringsadress'
+  },
+  billingPostalCode: {
+    rules: ['required', 'postalCode'],
+    displayName: 'Faktureringspostnummer'
+  },
+  billingCity: {
+    rules: ['required'],
+    displayName: 'Faktureringsort'
+  },
+  companyType: {
+    rules: ['required'],
+    displayName: 'Typ av företag'
+  },
+  status: {
+    rules: ['required'],
+    displayName: 'Status'
+  }
+}
+
+// Valideringsschema för kontaktperson
+const contactValidationSchema = {
+  name: {
+    rules: ['required'],
+    displayName: 'Namn'
+  },
+  email: {
+    rules: ['required', 'email'],
+    displayName: 'E-postadress'
+  },
+  phone: {
+    rules: ['phone'],
+    displayName: 'Telefonnummer'
+  }
+}
+
+// Separat validering för kontaktperson
+const {
+  validateAll: validateContactAll,
+  validateField: validateContactField,
+  touchField: touchContactField,
+  hasError: hasContactError,
+  getError: getContactError,
+  isRequired: isContactRequired,
+  clearErrors: clearContactErrors
+} = useValidation()
 
 // Utökad kunddata med alla nya fält
 const customers = [
@@ -143,7 +253,7 @@ const contactPersons = ref([
 const customer = ref(customers.find(c => c.id === Number(route.params.id)))
 const editedCustomer = ref({ ...customer.value })
 const hasChanges = ref(false)
-const showSaveConfirmation = ref(false)
+let warningNotificationId = null
 
 // Dialog för ny kontaktperson
 const showAddContactDialog = ref(false)
@@ -167,26 +277,76 @@ const goBack = () => {
 }
 
 // Markera att data har ändrats
-const handleFieldChange = () => {
-  hasChanges.value = true
+const handleFieldChange = (fieldName = null) => {
+  if (!hasChanges.value) {
+    hasChanges.value = true
+    // Visa LOKAL varning för osparade ändringar (försvinner vid navigering)
+    warningNotificationId = warning(
+      'Osparade ändringar',
+      'Spara för att behålla ändringarna'
+    )
+  }
+  
+  // Validera fältet om det är specificerat
+  if (fieldName && customerValidationSchema[fieldName]) {
+    validateField(
+      fieldName,
+      editedCustomer.value[fieldName],
+      customerValidationSchema[fieldName].rules,
+      customerValidationSchema[fieldName].displayName
+    )
+  }
+}
+
+// Hantera när användaren lämnar ett fält (blur)
+const handleFieldBlur = (fieldName) => {
+  touchField(fieldName)
+  if (customerValidationSchema[fieldName]) {
+    validateField(
+      fieldName,
+      editedCustomer.value[fieldName],
+      customerValidationSchema[fieldName].rules,
+      customerValidationSchema[fieldName].displayName
+    )
+  }
 }
 
 const saveChanges = () => {
+  // Validera alla fält innan sparande
+  const isValid = validateAll(editedCustomer.value, customerValidationSchema)
+  
+  if (!isValid) {
+    // Markera alla fält som "touched" för att visa fel
+    Object.keys(customerValidationSchema).forEach(fieldName => {
+      touchField(fieldName)
+    })
+    
+    notifyError(
+      'Valideringsfel',
+      'Kontrollera att alla obligatoriska fält är korrekt ifyllda.'
+    )
+    return
+  }
+
   try {
     // Här skulle vi normalt göra en API-anrop för att spara ändringarna
     Object.assign(customer.value, editedCustomer.value)
     hasChanges.value = false
-    showSaveConfirmation.value = true
     
-    // Dölj bekräftelsen efter 4 sekunder
-    setTimeout(() => {
-      showSaveConfirmation.value = false
-    }, 4000)
+    // Ta bort lokala varningsnotifikationer och rensa valideringsfel
+    clearLocalNotificationsOfType('warning')
+    clearErrors()
+    warningNotificationId = null
+    
+    // Visa GLOBAL framgång (syns även om användaren navigerar)
+    globalSuccess(
+      'Ändringar sparade!',
+      'Företagsinformationen har uppdaterats framgångsrikt.'
+    )
   } catch (err) {
-    error(
+    notifyError(
       'Fel vid sparande',
-      'Kunde inte spara ändringarna. Försök igen.',
-      { duration: 4000 }
+      'Kunde inte spara ändringarna. Försök igen.'
     )
   }
 }
@@ -194,12 +354,17 @@ const saveChanges = () => {
 const resetChanges = () => {
   editedCustomer.value = { ...customer.value }
   hasChanges.value = false
-  showSaveConfirmation.value = true
   
-  // Dölj bekräftelsen efter 3 sekunder
-  setTimeout(() => {
-    showSaveConfirmation.value = false
-  }, 3000)
+  // Ta bort lokala varningsnotifikationer och rensa valideringsfel
+  clearLocalNotificationsOfType('warning')
+  clearErrors()
+  warningNotificationId = null
+  
+  // Visa lokal bekräftelse (försvinner vid navigering)
+  notifySuccess(
+    'Ändringar återställda',
+    'Alla ändringar har återställts till ursprungliga värden.'
+  )
 }
 
 // Kontaktperson funktioner
@@ -208,31 +373,71 @@ const addContactPerson = () => {
 }
 
 const saveNewContact = () => {
-  if (newContact.value.name && newContact.value.email) {
-    const newId = Math.max(...contactPersons.value.map(p => p.id)) + 1
-    
-    contactPersons.value.push({
-      id: newId,
-      ...newContact.value
+  // Validera kontaktpersonens data
+  const isValid = validateContactAll(newContact.value, contactValidationSchema)
+  
+  if (!isValid) {
+    // Markera alla fält som "touched" för att visa fel
+    Object.keys(contactValidationSchema).forEach(fieldName => {
+      touchContactField(fieldName)
     })
     
-    // Om den nya kontakten ska vara huvudkontakt, sätt den som huvudkontakt
-    if (newContact.value.isMainContact) {
-      setMainContact(newId)
-    }
-    
-    // Återställ formuläret
-    newContact.value = {
-      name: '',
-      title: '',
-      email: '',
-      phone: '',
-      department: '',
-      isMainContact: false
-    }
-    
-    showAddContactDialog.value = false
-    success('Kontaktperson tillagd', 'Den nya kontaktpersonen har lagts till framgångsrikt.')
+    notifyError(
+      'Valideringsfel',
+      'Kontrollera att alla obligatoriska fält är korrekt ifyllda.'
+    )
+    return
+  }
+
+  const newId = Math.max(...contactPersons.value.map(p => p.id)) + 1
+  
+  contactPersons.value.push({
+    id: newId,
+    ...newContact.value
+  })
+  
+  // Om den nya kontakten ska vara huvudkontakt, sätt den som huvudkontakt
+  if (newContact.value.isMainContact) {
+    setMainContact(newId)
+  }
+  
+  // Återställ formuläret och rensa valideringsfel
+  newContact.value = {
+    name: '',
+    title: '',
+    email: '',
+    phone: '',
+    department: '',
+    isMainContact: false
+  }
+  
+  clearContactErrors()
+  showAddContactDialog.value = false
+  success('Kontaktperson tillagd', 'Den nya kontaktpersonen har lagts till framgångsrikt.')
+}
+
+// Hantera fältändringar för kontaktperson
+const handleContactFieldChange = (fieldName) => {
+  if (contactValidationSchema[fieldName]) {
+    validateContactField(
+      fieldName,
+      newContact.value[fieldName],
+      contactValidationSchema[fieldName].rules,
+      contactValidationSchema[fieldName].displayName
+    )
+  }
+}
+
+// Hantera när användaren lämnar ett kontaktfält (blur)
+const handleContactFieldBlur = (fieldName) => {
+  touchContactField(fieldName)
+  if (contactValidationSchema[fieldName]) {
+    validateContactField(
+      fieldName,
+      newContact.value[fieldName],
+      contactValidationSchema[fieldName].rules,
+      contactValidationSchema[fieldName].displayName
+    )
   }
 }
 
@@ -240,9 +445,21 @@ const sendEmail = (email: string) => {
   window.location.href = `mailto:${email}`
 }
 
-const deleteContactPerson = (id: number, name: string) => {
-  contactPersons.value = contactPersons.value.filter(person => person.id !== id)
-  success('Kontaktperson borttagen', `${name} har tagits bort från kontaktlistan.`)
+const deleteContactPerson = async (id: number, name: string) => {
+  const confirmed = await confirm(
+    'Ta bort kontaktperson',
+    `Är du säker på att du vill ta bort ${name} från kontaktlistan? Denna åtgärd kan inte ångras.`,
+    {
+      confirmText: 'Ta bort',
+      cancelText: 'Avbryt',
+      confirmVariant: 'destructive'
+    }
+  )
+  
+  if (confirmed) {
+    contactPersons.value = contactPersons.value.filter(person => person.id !== id)
+    success('Kontaktperson borttagen', `${name} har tagits bort från kontaktlistan.`)
+  }
 }
 
 const setMainContact = (personId: number) => {
@@ -281,22 +498,6 @@ const setMainContact = (personId: number) => {
     <template #filters>
       <!-- Inga filter för kunddetaljer -->
     </template>
-
-    <!-- Varningsbox för osparade ändringar -->
-    <div v-if="hasChanges" class="mx-6 mb-4 flex items-center gap-2 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg">
-      <AlertTriangle class="h-4 w-4 text-amber-600" />
-      <p class="text-xs text-amber-800 font-medium">
-        Osparade ändringar - Spara för att behålla ändringarna
-      </p>
-    </div>
-    
-    <!-- Bekräftelsebox för sparade ändringar -->
-    <div v-if="showSaveConfirmation" class="mx-6 mb-4 flex items-center gap-2 px-4 py-3 bg-green-50 border border-green-200 rounded-lg">
-      <CheckCircle class="h-4 w-4 text-green-600" />
-      <p class="text-xs text-green-800 font-medium">
-        Ändringar sparade! Företagsinformationen har uppdaterats framgångsrikt.
-      </p>
-    </div>
     
     <!-- Flikar för kunddetaljer -->
     <div v-if="customer" class="px-6 mt-6">
@@ -326,53 +527,89 @@ const setMainContact = (personId: number) => {
                 <h3 class="font-semibold text-sm text-gray-900 mb-4">Företagsinformation</h3>
                 
                 <div class="space-y-3">
-                  <div>
-                    <Label for="customerNumber" class="text-xs font-medium text-gray-700">Kundnummer</Label>
+                  <FormField
+                    label="Kundnummer"
+                    field-name="customerNumber"
+                    :required="isRequired('customerNumber', customerValidationSchema)"
+                    :error="getError('customerNumber')"
+                    tooltip="Unikt nummer för att identifiera kunden i systemet"
+                  >
                     <Input
                       id="customerNumber"
                       v-model="editedCustomer.customerNumber"
-                      @input="handleFieldChange"
+                      @input="() => handleFieldChange('customerNumber')"
+                      @blur="() => handleFieldBlur('customerNumber')"
                       placeholder="KU-001"
-                      class="text-xs h-8 mt-1"
+                      :class="[
+                        'text-xs h-8 mt-1',
+                        hasError('customerNumber') ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                      ]"
                       style="font-size: 12px;"
                     />
-                  </div>
+                  </FormField>
                   
-                  <div>
-                    <Label for="companyName" class="text-xs font-medium text-gray-700">Företagsnamn *</Label>
+                  <FormField
+                    label="Företagsnamn"
+                    field-name="companyName"
+                    :required="isRequired('companyName', customerValidationSchema)"
+                    :error="getError('companyName')"
+                    tooltip="Det officiella namnet på företaget"
+                  >
                     <Input
                       id="companyName"
                       v-model="editedCustomer.companyName"
-                      @input="handleFieldChange"
+                      @input="() => handleFieldChange('companyName')"
+                      @blur="() => handleFieldBlur('companyName')"
                       placeholder="Ange företagsnamn"
-                      class="text-xs h-8 mt-1 font-medium"
+                      :class="[
+                        'text-xs h-8 mt-1 font-medium',
+                        hasError('companyName') ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                      ]"
                       style="font-size: 12px;"
                     />
-                  </div>
+                  </FormField>
                   
-                  <div>
-                    <Label for="organizationNumber" class="text-xs font-medium text-gray-700">Organisationsnummer</Label>
+                  <FormField
+                    label="Organisationsnummer"
+                    field-name="organizationNumber"
+                    :required="isRequired('organizationNumber', customerValidationSchema)"
+                    :error="getError('organizationNumber')"
+                    tooltip="Företagets officiella organisationsnummer (format: 556123-4567)"
+                  >
                     <Input
                       id="organizationNumber"
                       v-model="editedCustomer.organizationNumber"
-                      @input="handleFieldChange"
+                      @input="() => handleFieldChange('organizationNumber')"
+                      @blur="() => handleFieldBlur('organizationNumber')"
                       placeholder="556123-4567"
-                      class="text-xs h-8 mt-1"
+                      :class="[
+                        'text-xs h-8 mt-1',
+                        hasError('organizationNumber') ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                      ]"
                       style="font-size: 12px;"
                     />
-                  </div>
+                  </FormField>
                   
-                  <div>
-                    <Label for="referenceNumber" class="text-xs font-medium text-gray-700">Referensnummer</Label>
+                  <FormField
+                    label="Referensnummer"
+                    field-name="referenceNumber"
+                    :required="isRequired('referenceNumber', customerValidationSchema)"
+                    :error="getError('referenceNumber')"
+                    tooltip="Internt referensnummer för enklare hantering"
+                  >
                     <Input
                       id="referenceNumber"
                       v-model="editedCustomer.referenceNumber"
-                      @input="handleFieldChange"
+                      @input="() => handleFieldChange('referenceNumber')"
+                      @blur="() => handleFieldBlur('referenceNumber')"
                       placeholder="Internt referensnummer"
-                      class="text-xs h-8 mt-1"
+                      :class="[
+                        'text-xs h-8 mt-1',
+                        hasError('referenceNumber') ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                      ]"
                       style="font-size: 12px;"
                     />
-                  </div>
+                  </FormField>
                 </div>
               </div>
 
@@ -381,42 +618,69 @@ const setMainContact = (personId: number) => {
                 <h3 class="font-semibold text-sm text-gray-900 mb-4">Kontaktinformation</h3>
                 
                 <div class="space-y-3">
-                  <div>
-                    <Label for="switchboardNumber" class="text-xs font-medium text-gray-700">Växelnummer</Label>
+                  <FormField
+                    label="Växelnummer"
+                    field-name="switchboardNumber"
+                    :required="isRequired('switchboardNumber', customerValidationSchema)"
+                    :error="getError('switchboardNumber')"
+                    tooltip="Företagets huvudtelefonnummer"
+                  >
                     <Input
                       id="switchboardNumber"
                       v-model="editedCustomer.switchboardNumber"
-                      @input="handleFieldChange"
+                      @input="() => handleFieldChange('switchboardNumber')"
+                      @blur="() => handleFieldBlur('switchboardNumber')"
                       placeholder="08-123 45 67"
-                      class="text-xs h-8 mt-1"
+                      :class="[
+                        'text-xs h-8 mt-1',
+                        hasError('switchboardNumber') ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                      ]"
                       style="font-size: 12px;"
                     />
-                  </div>
+                  </FormField>
                   
-                  <div>
-                    <Label for="companyEmail" class="text-xs font-medium text-gray-700">E-postadress</Label>
+                  <FormField
+                    label="E-postadress"
+                    field-name="companyEmail"
+                    :required="isRequired('companyEmail', customerValidationSchema)"
+                    :error="getError('companyEmail')"
+                    tooltip="Företagets officiella e-postadress"
+                  >
                     <Input
                       id="companyEmail"
                       v-model="editedCustomer.companyEmail"
-                      @input="handleFieldChange"
+                      @input="() => handleFieldChange('companyEmail')"
+                      @blur="() => handleFieldBlur('companyEmail')"
                       type="email"
                       placeholder="info@företag.se"
-                      class="text-xs h-8 mt-1"
+                      :class="[
+                        'text-xs h-8 mt-1',
+                        hasError('companyEmail') ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                      ]"
                       style="font-size: 12px;"
                     />
-                  </div>
+                  </FormField>
                   
-                  <div>
-                    <Label for="website" class="text-xs font-medium text-gray-700">Webbplats</Label>
+                  <FormField
+                    label="Webbplats"
+                    field-name="website"
+                    :required="isRequired('website', customerValidationSchema)"
+                    :error="getError('website')"
+                    tooltip="Företagets webbplats (med eller utan http://)"
+                  >
                     <Input
                       id="website"
                       v-model="editedCustomer.website"
-                      @input="handleFieldChange"
+                      @input="() => handleFieldChange('website')"
+                      @blur="() => handleFieldBlur('website')"
                       placeholder="www.företag.se"
-                      class="text-xs h-8 mt-1"
+                      :class="[
+                        'text-xs h-8 mt-1',
+                        hasError('website') ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                      ]"
                       style="font-size: 12px;"
                     />
-                  </div>
+                  </FormField>
                 </div>
               </div>
 
@@ -425,13 +689,25 @@ const setMainContact = (personId: number) => {
                 <h3 class="font-semibold text-sm text-gray-900 mb-4">Status & Klassificering</h3>
                 
                 <div class="space-y-3">
-                  <div>
-                    <Label for="companyType" class="text-xs font-medium text-gray-700">Typ av företag</Label>
+                  <FormField
+                    label="Typ av företag"
+                    field-name="companyType"
+                    :required="isRequired('companyType', customerValidationSchema)"
+                    :error="getError('companyType')"
+                    tooltip="Klassificering av företagets relation till er"
+                  >
                     <Select
                       v-model="editedCustomer.companyType"
-                      @update:model-value="handleFieldChange"
+                      @update:model-value="() => handleFieldChange('companyType')"
                     >
-                      <SelectTrigger class="text-xs h-8 mt-1 flex items-center justify-between" style="font-size: 12px;">
+                      <SelectTrigger 
+                        :class="[
+                          'text-xs h-8 mt-1 flex items-center justify-between',
+                          hasError('companyType') ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                        ]" 
+                        style="font-size: 12px;"
+                        @blur="() => handleFieldBlur('companyType')"
+                      >
                         <SelectValue placeholder="Välj typ" />
                       </SelectTrigger>
                       <SelectContent>
@@ -441,15 +717,27 @@ const setMainContact = (personId: number) => {
                         <SelectItem value="Prospect">Prospect</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
+                  </FormField>
                   
-                  <div>
-                    <Label for="status" class="text-xs font-medium text-gray-700">Status</Label>
+                  <FormField
+                    label="Status"
+                    field-name="status"
+                    :required="isRequired('status', customerValidationSchema)"
+                    :error="getError('status')"
+                    tooltip="Aktuell status för företagsrelationen"
+                  >
                     <Select
                       v-model="editedCustomer.status"
-                      @update:model-value="handleFieldChange"
+                      @update:model-value="() => handleFieldChange('status')"
                     >
-                      <SelectTrigger class="text-xs h-8 mt-1 flex items-center justify-between" style="font-size: 12px;">
+                      <SelectTrigger 
+                        :class="[
+                          'text-xs h-8 mt-1 flex items-center justify-between',
+                          hasError('status') ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                        ]" 
+                        style="font-size: 12px;"
+                        @blur="() => handleFieldBlur('status')"
+                      >
                         <SelectValue placeholder="Välj status" />
                       </SelectTrigger>
                       <SelectContent>
@@ -457,7 +745,7 @@ const setMainContact = (personId: number) => {
                         <SelectItem value="Inaktiv">Inaktiv</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
+                  </FormField>
                 </div>
               </div>
             </div>
@@ -466,18 +754,27 @@ const setMainContact = (personId: number) => {
             <div class="space-y-4">
               <h3 class="font-semibold text-sm text-gray-900 mb-4">Anteckningar om bolaget</h3>
               
-              <div>
-                <Label for="companyNotes" class="text-xs font-medium text-gray-700">Anteckningar</Label>
+              <FormField
+                label="Anteckningar"
+                field-name="companyNotes"
+                :required="isRequired('companyNotes', customerValidationSchema)"
+                :error="getError('companyNotes')"
+                description="Lägg till anteckningar om företaget, viktiga kontakter, avtal, etc."
+              >
                 <Textarea
                   id="companyNotes"
                   v-model="editedCustomer.companyNotes"
-                  @input="handleFieldChange"
+                  @input="() => handleFieldChange('companyNotes')"
+                  @blur="() => handleFieldBlur('companyNotes')"
                   rows="4"
                   placeholder="Lägg till anteckningar om företaget, viktiga kontakter, avtal, etc..."
-                  class="resize-none text-xs mt-1"
+                  :class="[
+                    'resize-none text-xs mt-1',
+                    hasError('companyNotes') ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                  ]"
                   style="font-size: 12px;"
                 />
-              </div>
+              </FormField>
             </div>
           </div>
         </TabsContent>
@@ -488,56 +785,92 @@ const setMainContact = (personId: number) => {
             <h3 class="font-semibold text-sm text-gray-900 mb-6">Besöksadress</h3>
             
             <div class="space-y-4">
-              <div>
-                <Label for="streetAddress" class="text-xs font-medium text-gray-700">Gatuadress</Label>
+              <FormField
+                label="Gatuadress"
+                field-name="streetAddress"
+                :required="isRequired('streetAddress', customerValidationSchema)"
+                :error="getError('streetAddress')"
+                tooltip="Företagets besöksadress"
+              >
                 <Input
                   id="streetAddress"
                   v-model="editedCustomer.streetAddress"
-                  @input="handleFieldChange"
+                  @input="() => handleFieldChange('streetAddress')"
+                  @blur="() => handleFieldBlur('streetAddress')"
                   placeholder="Gatunamn 123"
-                  class="text-xs h-8 mt-1"
+                  :class="[
+                    'text-xs h-8 mt-1',
+                    hasError('streetAddress') ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                  ]"
                   style="font-size: 12px;"
                 />
-              </div>
+              </FormField>
               
               <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <Label for="postalCode" class="text-xs font-medium text-gray-700">Postnummer</Label>
+                <FormField
+                  label="Postnummer"
+                  field-name="postalCode"
+                  :required="isRequired('postalCode', customerValidationSchema)"
+                  :error="getError('postalCode')"
+                  tooltip="5-siffrigt postnummer"
+                >
                   <Input
                     id="postalCode"
                     v-model="editedCustomer.postalCode"
-                    @input="handleFieldChange"
+                    @input="() => handleFieldChange('postalCode')"
+                    @blur="() => handleFieldBlur('postalCode')"
                     placeholder="12345"
-                    class="text-xs h-8 mt-1"
+                    :class="[
+                      'text-xs h-8 mt-1',
+                      hasError('postalCode') ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                    ]"
                     style="font-size: 12px;"
                   />
-                </div>
+                </FormField>
                 
-                <div>
-                  <Label for="city" class="text-xs font-medium text-gray-700">Ort</Label>
+                <FormField
+                  label="Ort"
+                  field-name="city"
+                  :required="isRequired('city', customerValidationSchema)"
+                  :error="getError('city')"
+                  tooltip="Ort för besöksadressen"
+                >
                   <Input
                     id="city"
                     v-model="editedCustomer.city"
-                    @input="handleFieldChange"
+                    @input="() => handleFieldChange('city')"
+                    @blur="() => handleFieldBlur('city')"
                     placeholder="Stockholm"
-                    class="text-xs h-8 mt-1"
+                    :class="[
+                      'text-xs h-8 mt-1',
+                      hasError('city') ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                    ]"
                     style="font-size: 12px;"
                   />
-                </div>
+                </FormField>
               </div>
               
-              <div>
-                <Label for="country" class="text-xs font-medium text-gray-700">Land</Label>
+              <FormField
+                label="Land"
+                field-name="country"
+                :required="isRequired('country', customerValidationSchema)"
+                :error="getError('country')"
+                tooltip="Land för besöksadressen"
+              >
                 <Input
                   id="country"
                   v-model="editedCustomer.country"
-                  @input="handleFieldChange"
+                  @input="() => handleFieldChange('country')"
+                  @blur="() => handleFieldBlur('country')"
                   value="Sverige"
                   readonly
-                  class="bg-gray-50 text-xs h-8 mt-1"
+                  :class="[
+                    'bg-gray-50 text-xs h-8 mt-1',
+                    hasError('country') ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                  ]"
                   style="font-size: 12px;"
                 />
-              </div>
+              </FormField>
             </div>
           </div>
         </TabsContent>
@@ -548,56 +881,92 @@ const setMainContact = (personId: number) => {
             <h3 class="font-semibold text-sm text-gray-900 mb-6">Faktureringsadress</h3>
             
             <div class="space-y-4">
-              <div>
-                <Label for="billingStreetAddress" class="text-xs font-medium text-gray-700">Gatuadress</Label>
+              <FormField
+                label="Gatuadress"
+                field-name="billingStreetAddress"
+                :required="isRequired('billingStreetAddress', customerValidationSchema)"
+                :error="getError('billingStreetAddress')"
+                tooltip="Adress för fakturor (kan vara postbox)"
+              >
                 <Input
                   id="billingStreetAddress"
                   v-model="editedCustomer.billingStreetAddress"
-                  @input="handleFieldChange"
+                  @input="() => handleFieldChange('billingStreetAddress')"
+                  @blur="() => handleFieldBlur('billingStreetAddress')"
                   placeholder="Gatunamn 123 eller Box 456"
-                  class="text-xs h-8 mt-1"
+                  :class="[
+                    'text-xs h-8 mt-1',
+                    hasError('billingStreetAddress') ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                  ]"
                   style="font-size: 12px;"
                 />
-              </div>
+              </FormField>
               
               <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <Label for="billingPostalCode" class="text-xs font-medium text-gray-700">Postnummer</Label>
+                <FormField
+                  label="Postnummer"
+                  field-name="billingPostalCode"
+                  :required="isRequired('billingPostalCode', customerValidationSchema)"
+                  :error="getError('billingPostalCode')"
+                  tooltip="5-siffrigt postnummer för faktureringsadressen"
+                >
                   <Input
                     id="billingPostalCode"
                     v-model="editedCustomer.billingPostalCode"
-                    @input="handleFieldChange"
+                    @input="() => handleFieldChange('billingPostalCode')"
+                    @blur="() => handleFieldBlur('billingPostalCode')"
                     placeholder="12345"
-                    class="text-xs h-8 mt-1"
+                    :class="[
+                      'text-xs h-8 mt-1',
+                      hasError('billingPostalCode') ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                    ]"
                     style="font-size: 12px;"
                   />
-                </div>
+                </FormField>
                 
-                <div>
-                  <Label for="billingCity" class="text-xs font-medium text-gray-700">Ort</Label>
+                <FormField
+                  label="Ort"
+                  field-name="billingCity"
+                  :required="isRequired('billingCity', customerValidationSchema)"
+                  :error="getError('billingCity')"
+                  tooltip="Ort för faktureringsadressen"
+                >
                   <Input
                     id="billingCity"
                     v-model="editedCustomer.billingCity"
-                    @input="handleFieldChange"
+                    @input="() => handleFieldChange('billingCity')"
+                    @blur="() => handleFieldBlur('billingCity')"
                     placeholder="Stockholm"
-                    class="text-xs h-8 mt-1"
+                    :class="[
+                      'text-xs h-8 mt-1',
+                      hasError('billingCity') ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                    ]"
                     style="font-size: 12px;"
                   />
-                </div>
+                </FormField>
               </div>
               
-              <div>
-                <Label for="billingCountry" class="text-xs font-medium text-gray-700">Land</Label>
+              <FormField
+                label="Land"
+                field-name="billingCountry"
+                :required="isRequired('billingCountry', customerValidationSchema)"
+                :error="getError('billingCountry')"
+                tooltip="Land för faktureringsadressen"
+              >
                 <Input
                   id="billingCountry"
                   v-model="editedCustomer.billingCountry"
-                  @input="handleFieldChange"
+                  @input="() => handleFieldChange('billingCountry')"
+                  @blur="() => handleFieldBlur('billingCountry')"
                   value="Sverige"
                   readonly
-                  class="bg-gray-50 text-xs h-8 mt-1"
+                  :class="[
+                    'bg-gray-50 text-xs h-8 mt-1',
+                    hasError('billingCountry') ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                  ]"
                   style="font-size: 12px;"
                 />
-              </div>
+              </FormField>
             </div>
           </div>
         </TabsContent>
@@ -625,13 +994,27 @@ const setMainContact = (personId: number) => {
               <div class="grid gap-4 py-4">
                 <div class="grid grid-cols-4 items-center gap-4">
                   <Label for="contact-name" class="text-right text-xs">Namn *</Label>
-                  <Input
-                    id="contact-name"
-                    v-model="newContact.name"
-                    class="col-span-3 text-xs h-8"
-                    style="font-size: 12px;"
-                    placeholder="Förnamn Efternamn"
-                  />
+                  <div class="col-span-3">
+                    <FormField
+                      label=""
+                      field-name="name"
+                      :required="isContactRequired('name', contactValidationSchema)"
+                      :error="getContactError('name')"
+                    >
+                      <Input
+                        id="contact-name"
+                        v-model="newContact.name"
+                        @input="() => handleContactFieldChange('name')"
+                        @blur="() => handleContactFieldBlur('name')"
+                        :class="[
+                          'text-xs h-8',
+                          hasContactError('name') ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                        ]"
+                        style="font-size: 12px;"
+                        placeholder="Förnamn Efternamn"
+                      />
+                    </FormField>
+                  </div>
                 </div>
                 <div class="grid grid-cols-4 items-center gap-4">
                   <Label for="contact-title" class="text-right text-xs">Titel</Label>
@@ -655,29 +1038,57 @@ const setMainContact = (personId: number) => {
                 </div>
                 <div class="grid grid-cols-4 items-center gap-4">
                   <Label for="contact-phone" class="text-right text-xs">Telefon</Label>
-                  <Input
-                    id="contact-phone"
-                    v-model="newContact.phone"
-                    class="col-span-3 text-xs h-8"
-                    style="font-size: 12px;"
-                    placeholder="070-123 45 67"
-                  />
+                  <div class="col-span-3">
+                    <FormField
+                      label=""
+                      field-name="phone"
+                      :required="isContactRequired('phone', contactValidationSchema)"
+                      :error="getContactError('phone')"
+                    >
+                      <Input
+                        id="contact-phone"
+                        v-model="newContact.phone"
+                        @input="() => handleContactFieldChange('phone')"
+                        @blur="() => handleContactFieldBlur('phone')"
+                        :class="[
+                          'text-xs h-8',
+                          hasContactError('phone') ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                        ]"
+                        style="font-size: 12px;"
+                        placeholder="070-123 45 67"
+                      />
+                    </FormField>
+                  </div>
                 </div>
                 <div class="grid grid-cols-4 items-center gap-4">
                   <Label for="contact-email" class="text-right text-xs">E-post *</Label>
-                  <Input
-                    id="contact-email"
-                    v-model="newContact.email"
-                    type="email"
-                    class="col-span-3 text-xs h-8"
-                    style="font-size: 12px;"
-                    placeholder="namn@företag.se"
-                  />
+                  <div class="col-span-3">
+                    <FormField
+                      label=""
+                      field-name="email"
+                      :required="isContactRequired('email', contactValidationSchema)"
+                      :error="getContactError('email')"
+                    >
+                      <Input
+                        id="contact-email"
+                        v-model="newContact.email"
+                        @input="() => handleContactFieldChange('email')"
+                        @blur="() => handleContactFieldBlur('email')"
+                        type="email"
+                        :class="[
+                          'text-xs h-8',
+                          hasContactError('email') ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                        ]"
+                        style="font-size: 12px;"
+                        placeholder="namn@företag.se"
+                      />
+                    </FormField>
+                  </div>
                 </div>
                 <div class="grid grid-cols-4 items-center gap-4">
                   <Label for="contact-main" class="text-right text-xs">Huvudkontakt</Label>
                   <div class="col-span-3 flex items-center space-x-2">
-                    <Switch
+                    <Checkbox
                       id="contact-main"
                       v-model:checked="newContact.isMainContact"
                     />

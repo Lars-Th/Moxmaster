@@ -16,8 +16,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { ChevronUp, ChevronDown, ArrowUpDown, Plus, Filter, Mail, Trash2, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-vue-next'
 import PageLayout from '@/components/ui/PageLayout.vue'
+import { useNotifications } from '@/composables/useNotifications'
 
 const router = useRouter()
+const { confirm, success } = useNotifications()
 
 // Simulerad kunddata med 25 kunder och ort istället för email
 const customers = ref([
@@ -156,12 +158,27 @@ const sendEmail = (customer: any, event: Event) => {
   window.location.href = `mailto:${customer.email}`
 }
 
-const deleteCustomer = (customerId: number, event: Event) => {
+const deleteCustomer = async (customerId: number, event: Event) => {
   event.stopPropagation() // Förhindra att raden klickas
-  if (confirm('Är du säker på att du vill radera denna kund?')) {
+  
+  const customer = customers.value.find(c => c.id === customerId)
+  if (!customer) return
+  
+  const confirmed = await confirm(
+    'Ta bort kund',
+    `Är du säker på att du vill ta bort ${customer.name} (${customer.company}) från kundlistan? Denna åtgärd kan inte ångras.`,
+    {
+      confirmText: 'Ta bort',
+      cancelText: 'Avbryt',
+      confirmVariant: 'destructive'
+    }
+  )
+  
+  if (confirmed) {
     const index = customers.value.findIndex(c => c.id === customerId)
     if (index > -1) {
       customers.value.splice(index, 1)
+      success('Kund borttagen', `${customer.name} har tagits bort från kundlistan.`)
     }
   }
 }

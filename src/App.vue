@@ -21,7 +21,9 @@ import {
   Palette,
   User,
   LogOut,
-  UserCheck
+  UserCheck,
+  Bell,
+  CheckCircle
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -195,6 +197,31 @@ onMounted(() => {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+      </div>
+
+      <!-- Demo sektion -->
+      <div class="mt-8">
+        <div class="px-3 mb-2">
+          <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Demo</h3>
+        </div>
+        <nav class="space-y-1">
+          <router-link
+            to="/demo"
+            class="group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200"
+            :class="$route.path === '/demo' ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'"
+          >
+            <Bell class="mr-3 h-4 w-4" />
+            Notifikationer
+          </router-link>
+          <router-link
+            to="/validation-demo"
+            class="group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200"
+            :class="$route.path === '/validation-demo' ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'"
+          >
+            <CheckCircle class="mr-3 h-4 w-4" />
+            Validering
+          </router-link>
+        </nav>
       </div>
     </aside>
 

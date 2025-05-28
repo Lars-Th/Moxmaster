@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import NotificationContainer from './NotificationContainer.vue'
+
 interface Props {
   title: string
   breadcrumbs: string
@@ -62,6 +64,9 @@ defineProps<Props>()
         </div>
       </div>
     </div>
+
+    <!-- Notifikationer -->
+    <NotificationContainer />
 
     <!-- Huvudinnehåll -->
     <div>

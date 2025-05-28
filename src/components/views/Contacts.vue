@@ -15,8 +15,10 @@ import { Badge } from '@/components/ui/badge'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { ChevronUp, ChevronDown, ArrowUpDown, Plus, Mail, Trash2, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-vue-next'
 import PageLayout from '@/components/ui/PageLayout.vue'
+import { useNotifications } from '@/composables/useNotifications'
 
 const router = useRouter()
+const { confirm, success } = useNotifications()
 
 // Simulerad kontaktpersonsdata med 25 kontakter
 const contacts = ref([
@@ -64,10 +66,16 @@ const filteredContacts = computed(() => {
   let filtered = contacts.value.filter(contact => {
     const matchesSearch = 
       contact.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      contact.city.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      contact.company.toLowerCase().includes(searchQuery.value.toLowerCase())
+      contact.company.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      contact.phone.toLowerCase().includes(searchQuery.value.toLowerCase())
     
-    const matchesStatus = statusFilter.value === 'all' || contact.status === statusFilter.value
+    let matchesStatus = true
+    if (statusFilter.value === 'Huvudkontakt') {
+      matchesStatus = contact.isMainContact === true
+    } else if (statusFilter.value === 'Kontakt') {
+      matchesStatus = contact.isMainContact === false
+    }
+    // Om statusFilter.value === 'all', visa alla
     
     return matchesSearch && matchesStatus
   })
@@ -75,8 +83,14 @@ const filteredContacts = computed(() => {
   // Sortering
   if (sortField.value) {
     filtered.sort((a, b) => {
-      const aValue = a[sortField.value as keyof typeof a]
-      const bValue = b[sortField.value as keyof typeof b]
+      let aValue = a[sortField.value as keyof typeof a]
+      let bValue = b[sortField.value as keyof typeof b]
+      
+      // Speciell hantering för isMainContact sortering
+      if (sortField.value === 'isMainContact') {
+        aValue = a.isMainContact ? 1 : 0
+        bValue = b.isMainContact ? 1 : 0
+      }
       
       if (sortDirection.value === 'asc') {
         return aValue < bValue ? -1 : aValue > bValue ? 1 : 0
@@ -150,12 +164,27 @@ const sendEmail = (contact: any, event: Event) => {
   window.location.href = `mailto:${contact.email}`
 }
 
-const deleteContact = (contactId: number, event: Event) => {
+const deleteContact = async (contactId: number, event: Event) => {
   event.stopPropagation() // Förhindra att raden klickas
-  if (confirm('Är du säker på att du vill radera denna kontakt?')) {
+  
+  const contact = contacts.value.find(c => c.id === contactId)
+  if (!contact) return
+  
+  const confirmed = await confirm(
+    'Ta bort kontaktperson',
+    `Är du säker på att du vill ta bort ${contact.name} från kontaktlistan? Denna åtgärd kan inte ångras.`,
+    {
+      confirmText: 'Ta bort',
+      cancelText: 'Avbryt',
+      confirmVariant: 'destructive'
+    }
+  )
+  
+  if (confirmed) {
     const index = contacts.value.findIndex(c => c.id === contactId)
     if (index > -1) {
       contacts.value.splice(index, 1)
+      success('Kontaktperson borttagen', `${contact.name} har tagits bort från kontaktlistan.`)
     }
   }
 }
