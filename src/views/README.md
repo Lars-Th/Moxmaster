@@ -39,7 +39,7 @@ These components are typically unstyled or minimally styled and focus on functio
 Custom components encapsulate business logic and provide reusable patterns:
 - **PageLayout.vue**: Standard page wrapper with breadcrumbs, stats, and title
 - **DataTable.vue**: Feature-rich table with sorting, filtering, and actions
-- **ActionBar.vue**: Search and filter bar with action buttons
+- **SearchAndFilter.vue**: Search and filter bar with action buttons
 - **DashboardCard.vue**: Card component for dashboard metrics
 - **ProspectorChat.vue**: Chat interface component
 - **StatusNotification.vue**: Application-wide notifications

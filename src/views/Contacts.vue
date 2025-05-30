@@ -5,7 +5,7 @@ import { useContactStore } from '@/stores/contactStore'
 import { Plus } from 'lucide-vue-next'
 import PageLayout from '@/components/custom/PageLayout.vue'
 import DataTable from '@/components/custom/DataTable.vue'
-import ActionBar from '@/components/custom/SearchAndFilter.vue'
+import SearchAndFilter from '@/components/custom/SearchAndFilter.vue'
 
 const router = useRouter()
 const contactStore = useContactStore()
@@ -120,7 +120,7 @@ const deleteContact = (contact: any, event: Event) => {
       delete-confirm-message="Är du säker på att du vill radera denna kontakt?"
     >
       <template #filters="{ searchQuery, statusFilter, filterOptions, updateSearchQuery, updateStatusFilter }">
-        <ActionBar
+        <SearchAndFilter
           :action-buttons="actionButtons"
           :search-query="searchQuery"
           :status-filter="statusFilter"

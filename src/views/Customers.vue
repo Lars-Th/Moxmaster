@@ -6,7 +6,7 @@ import { Plus } from 'lucide-vue-next'
 import TitleBreadcrumbs from '@/components/custom/TitleBreadcrumbs.vue'
 import TitleAnalytics from '@/components/custom/TitleAnalytics.vue'
 import DataTable from '@/components/custom/DataTable.vue'
-import ActionBar from '@/components/custom/SearchAndFilter.vue'
+import SearchAndFilter from '@/components/custom/SearchAndFilter.vue'
 
 interface BreadcrumbItem {
   label: string
@@ -160,7 +160,7 @@ const deleteCustomer = (customer: any, event: Event) => {
         delete-confirm-message="Är du säker på att du vill radera denna kund?"
       >
         <template #filters="{ searchQuery, statusFilter, filterOptions, updateSearchQuery, updateStatusFilter }">
-          <ActionBar
+          <SearchAndFilter
             :action-buttons="actionButtons"
             :search-query="searchQuery"
             :status-filter="statusFilter"
