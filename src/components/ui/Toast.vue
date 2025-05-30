@@ -1,37 +1,33 @@
-<script setup>
-import { ref, onMounted, watch } from 'vue'
-import { CheckCircle, X, Info, AlertTriangle, XCircle } from 'lucide-vue-next'
+<script setup lang="ts">
+import { ref, onMounted, watch, computed } from 'vue'
+import { CheckCircle, X, Info, AlertTriangle, XCircle, HelpCircle } from 'lucide-vue-next'
+import { Button } from '@/components/ui/button'
 
-const props = defineProps({
-  show: {
-    type: Boolean,
-    default: false
-  },
-  type: {
-    type: String,
-    default: 'success', // success, info, warning, error
-    validator: (value) => ['success', 'info', 'warning', 'error'].includes(value)
-  },
-  title: {
-    type: String,
-    required: true
-  },
-  message: {
-    type: String,
-    default: ''
-  },
-  duration: {
-    type: Number,
-    default: 3000
-  },
-  position: {
-    type: String,
-    default: 'top-center', // top-right, top-left, bottom-right, bottom-left, top-center, bottom-center
-    validator: (value) => ['top-right', 'top-left', 'bottom-right', 'bottom-left', 'top-center', 'bottom-center'].includes(value)
+interface Notification {
+  id: number
+  type: 'success' | 'error' | 'warning' | 'info' | 'confirm'
+  title: string
+  message: string
+  isGlobal?: boolean
+  options?: {
+    confirmText: string
+    cancelText: string
+    confirmVariant: string
   }
-})
+  resolve?: (value: boolean) => void
+}
 
-const emit = defineEmits(['close'])
+interface Props {
+  notification: Notification
+  index: number
+}
+
+const props = defineProps<Props>()
+
+const emit = defineEmits<{
+  close: []
+  confirm: [id: number, confirmed: boolean]
+}>()
 
 const visible = ref(false)
 let timeoutId = null
@@ -40,21 +36,24 @@ const iconMap = {
   success: CheckCircle,
   info: Info,
   warning: AlertTriangle,
-  error: XCircle
+  error: XCircle,
+  confirm: HelpCircle
 }
 
 const colorClasses = {
   success: 'bg-green-50 border-green-200 text-green-800',
   info: 'bg-blue-50 border-blue-200 text-blue-800',
   warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-  error: 'bg-red-50 border-red-200 text-red-800'
+  error: 'bg-red-50 border-red-200 text-red-800',
+  confirm: 'bg-gray-50 border-gray-200'
 }
 
 const iconColorClasses = {
   success: 'text-green-400',
   info: 'text-blue-400',
   warning: 'text-yellow-400',
-  error: 'text-red-400'
+  error: 'text-red-400',
+  confirm: 'text-gray-400'
 }
 
 const positionClasses = {
@@ -66,6 +65,18 @@ const positionClasses = {
   'bottom-center': 'bottom-4 left-1/2 -translate-x-1/2'
 }
 
+const typeClasses = computed(() => {
+  return colorClasses[props.notification.type] || colorClasses.info
+})
+
+const iconComponent = computed(() => {
+  return iconMap[props.notification.type] || Info
+})
+
+const iconClasses = computed(() => {
+  return iconColorClasses[props.notification.type] || iconColorClasses.info
+})
+
 const close = () => {
   visible.value = false
   if (timeoutId) {
@@ -74,13 +85,21 @@ const close = () => {
   emit('close')
 }
 
-watch(() => props.show, (newValue) => {
+const handleConfirm = () => {
+  emit('confirm', props.notification.id, true)
+}
+
+const handleCancel = () => {
+  emit('confirm', props.notification.id, false)
+}
+
+watch(() => props.notification.type, (newValue) => {
   if (newValue) {
     visible.value = true
-    if (props.duration > 0) {
+    if (props.notification.options?.duration > 0) {
       timeoutId = setTimeout(() => {
         close()
-      }, props.duration)
+      }, props.notification.options.duration)
     }
   } else {
     visible.value = false
@@ -88,58 +107,69 @@ watch(() => props.show, (newValue) => {
 })
 
 onMounted(() => {
-  if (props.show) {
+  if (props.notification.type) {
     visible.value = true
-    if (props.duration > 0) {
+    if (props.notification.options?.duration > 0) {
       timeoutId = setTimeout(() => {
         close()
-      }, props.duration)
+      }, props.notification.options.duration)
     }
   }
 })
 </script>
 
 <template>
-  <Transition
-    enter-active-class="transition ease-out duration-300"
-    enter-from-class="opacity-0 transform translate-y-2"
-    enter-to-class="opacity-100 transform translate-y-0"
-    leave-active-class="transition ease-in duration-200"
-    leave-from-class="opacity-100 transform translate-y-0"
-    leave-to-class="opacity-0 transform translate-y-2"
+  <div
+    :class="[
+      'fixed right-4 z-50 w-full max-w-sm rounded-lg border p-4 shadow-lg transition-all duration-300 ease-in-out',
+      typeClasses,
+      'animate-in slide-in-from-right-full'
+    ]"
+    :style="{ top: `${index * 70 + 20}px` }"
   >
-    <div
-      v-if="visible"
-      :class="[
-        'w-96 shadow-lg rounded-lg border p-4 pointer-events-auto',
-        colorClasses[type]
-      ]"
-    >
-      <div class="flex items-start">
-        <div class="flex-shrink-0">
-          <component
-            :is="iconMap[type]"
-            :class="['h-5 w-5', iconColorClasses[type]]"
-          />
-        </div>
-        <div class="ml-3 w-0 flex-1">
-          <p class="text-sm font-medium">
-            {{ title }}
-          </p>
-          <p v-if="message" class="mt-1 text-sm opacity-90">
-            {{ message }}
-          </p>
-        </div>
-        <div class="ml-4 flex-shrink-0 flex">
-          <button
-            @click="close"
-            class="inline-flex rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-green-50 focus:ring-green-600"
-          >
-            <span class="sr-only">Stäng</span>
-            <X :class="['h-4 w-4', iconColorClasses[type]]" />
-          </button>
+    <!-- Confirm dialog -->
+    <div v-if="notification.type === 'confirm'" class="space-y-3">
+      <div class="flex items-start space-x-3">
+        <component :is="iconComponent" :class="iconClasses" />
+        <div class="flex-1 min-w-0">
+          <h4 class="text-sm font-semibold text-gray-900">{{ notification.title }}</h4>
+          <p class="text-sm text-gray-600 mt-1">{{ notification.message }}</p>
         </div>
       </div>
+      
+      <div class="flex space-x-2 justify-end">
+        <Button
+          variant="outline"
+          size="sm"
+          @click="handleCancel"
+          class="text-xs h-7"
+        >
+          {{ notification.options?.cancelText }}
+        </Button>
+        <Button
+          :variant="notification.options?.confirmVariant"
+          size="sm"
+          @click="handleConfirm"
+          class="text-xs h-7"
+        >
+          {{ notification.options?.confirmText }}
+        </Button>
+      </div>
     </div>
-  </Transition>
+
+    <!-- Regular notification -->
+    <div v-else class="flex items-start space-x-3">
+      <component :is="iconComponent" :class="iconClasses" />
+      <div class="flex-1 min-w-0">
+        <h4 class="text-sm font-semibold text-gray-900">{{ notification.title }}</h4>
+        <p class="text-sm text-gray-600 mt-1">{{ notification.message }}</p>
+      </div>
+      <button
+        @click="$emit('close')"
+        class="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+      >
+        <X class="h-4 w-4" />
+      </button>
+    </div>
+  </div>
 </template> 

@@ -7,53 +7,74 @@
         <h3 class="font-semibold text-sm text-gray-900 mb-4">Företagsinformation</h3>
         
         <div class="space-y-3">
-          <div>
-            <Label for="customerNumber" class="text-xs font-medium text-gray-700">Kundnummer</Label>
+          <FormField
+            label="Kundnummer"
+            field-name="customerNumber"
+            :error="props.errors?.customerNumber"
+            tooltip="Unikt kundnummer för identifiering"
+          >
             <Input
               id="customerNumber"
               v-model="editedCustomer.customerNumber"
               @input="$emit('field-change')"
+              @blur="handleFieldBlur('customerNumber')"
               placeholder="KU-001"
-              class="text-xs h-8 mt-1"
+              class="text-xs h-8"
               style="font-size: 12px;"
             />
-          </div>
+          </FormField>
           
-          <div>
-            <Label for="companyName" class="text-xs font-medium text-gray-700">Företagsnamn *</Label>
+          <FormField
+            label="Företagsnamn"
+            field-name="companyName"
+            :required="true"
+            :error="props.errors?.companyName"
+            tooltip="Företagets officiella namn"
+          >
             <Input
               id="companyName"
               v-model="editedCustomer.companyName"
               @input="$emit('field-change')"
+              @blur="handleFieldBlur('companyName')"
               placeholder="Ange företagsnamn"
-              class="text-xs h-8 mt-1 font-medium"
+              class="text-xs h-8 font-medium"
               style="font-size: 12px;"
             />
-          </div>
+          </FormField>
           
-          <div>
-            <Label for="organizationNumber" class="text-xs font-medium text-gray-700">Organisationsnummer</Label>
+          <FormField
+            label="Organisationsnummer"
+            field-name="organizationNumber"
+            :error="props.errors?.organizationNumber"
+            tooltip="Svenskt organisationsnummer (556123-4567)"
+          >
             <Input
               id="organizationNumber"
               v-model="editedCustomer.organizationNumber"
               @input="$emit('field-change')"
+              @blur="handleFieldBlur('organizationNumber')"
               placeholder="556123-4567"
-              class="text-xs h-8 mt-1"
+              class="text-xs h-8"
               style="font-size: 12px;"
             />
-          </div>
+          </FormField>
           
-          <div>
-            <Label for="referenceNumber" class="text-xs font-medium text-gray-700">Referensnummer</Label>
+          <FormField
+            label="Referensnummer"
+            field-name="referenceNumber"
+            :error="props.errors?.referenceNumber"
+            tooltip="Internt referensnummer för spårning"
+          >
             <Input
               id="referenceNumber"
               v-model="editedCustomer.referenceNumber"
               @input="$emit('field-change')"
+              @blur="handleFieldBlur('referenceNumber')"
               placeholder="Internt referensnummer"
-              class="text-xs h-8 mt-1"
+              class="text-xs h-8"
               style="font-size: 12px;"
             />
-          </div>
+          </FormField>
         </div>
       </div>
 
@@ -62,42 +83,57 @@
         <h3 class="font-semibold text-sm text-gray-900 mb-4">Kontaktinformation</h3>
         
         <div class="space-y-3">
-          <div>
-            <Label for="switchboardNumber" class="text-xs font-medium text-gray-700">Växelnummer</Label>
+          <FormField
+            label="Växelnummer"
+            field-name="switchboardNumber"
+            :error="props.errors?.switchboardNumber"
+            tooltip="Företagets huvudtelefonnummer"
+          >
             <Input
               id="switchboardNumber"
               v-model="editedCustomer.switchboardNumber"
               @input="$emit('field-change')"
+              @blur="handleFieldBlur('switchboardNumber')"
               placeholder="08-123 45 67"
-              class="text-xs h-8 mt-1"
+              class="text-xs h-8"
               style="font-size: 12px;"
             />
-          </div>
+          </FormField>
           
-          <div>
-            <Label for="companyEmail" class="text-xs font-medium text-gray-700">E-postadress</Label>
+          <FormField
+            label="E-postadress"
+            field-name="companyEmail"
+            :error="props.errors?.companyEmail"
+            tooltip="Företagets huvudsakliga e-postadress"
+          >
             <Input
               id="companyEmail"
               v-model="editedCustomer.companyEmail"
               @input="$emit('field-change')"
+              @blur="handleFieldBlur('companyEmail')"
               type="email"
               placeholder="info@företag.se"
-              class="text-xs h-8 mt-1"
+              class="text-xs h-8"
               style="font-size: 12px;"
             />
-          </div>
+          </FormField>
           
-          <div>
-            <Label for="website" class="text-xs font-medium text-gray-700">Webbplats</Label>
+          <FormField
+            label="Webbplats"
+            field-name="website"
+            :error="props.errors?.website"
+            tooltip="Företagets webbplats (med http:// eller https://)"
+          >
             <Input
               id="website"
               v-model="editedCustomer.website"
               @input="$emit('field-change')"
-              placeholder="www.företag.se"
-              class="text-xs h-8 mt-1"
+              @blur="handleFieldBlur('website')"
+              placeholder="https://www.företag.se"
+              class="text-xs h-8"
               style="font-size: 12px;"
             />
-          </div>
+          </FormField>
         </div>
       </div>
 
@@ -168,15 +204,25 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import FormField from '@/components/ui/FormField.vue'
+import { useValidation } from '@/composables/useValidation'
 import type { Customer } from '@/stores/customerStore'
 
 interface Props {
   editedCustomer: Customer
+  errors?: Record<string, string | null>
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 
-defineEmits<{
+const emit = defineEmits<{
   'field-change': []
+  'field-blur': [fieldName: string]
 }>()
+
+const { hasError, getError } = useValidation()
+
+const handleFieldBlur = (fieldName: string) => {
+  emit('field-blur', fieldName)
+}
 </script> 

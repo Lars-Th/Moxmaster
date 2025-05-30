@@ -3,53 +3,47 @@ import { useRouter } from 'vue-router'
 
 // Global state för notifikationer
 const notifications = ref([])
-let notificationId = 0
-let currentRoute = null
+const nextId = ref(1)
+
+// Router instance för att lyssna på route changes
+let router = null
 
 export function useNotifications() {
-  const router = useRouter()
-  
-  // Spåra aktuell rutt för att rensa lokala notifikationer
-  if (router && !currentRoute) {
-    currentRoute = router.currentRoute.value.path
+  // Sätt router om den inte redan är satt
+  if (!router) {
+    router = useRouter()
     
-    // Lyssna på ruttändringar och rensa lokala notifikationer
-    router.afterEach((to) => {
-      if (currentRoute !== to.path) {
-        clearLocalNotifications()
-        currentRoute = to.path
-      }
+    // Lyssna på route changes och rensa lokala notifikationer
+    router.beforeEach(() => {
+      clearLocalNotifications()
     })
   }
 
-  // Lägg till en notifikation
+  // Lägg till notifikation
   const addNotification = (type, title, message, options = {}) => {
-    const id = ++notificationId
     const notification = {
-      id,
-      type, // 'warning', 'success', 'error', 'info', 'confirm'
+      id: nextId.value++,
+      type,
       title,
       message,
-      duration: options.duration || (type === 'warning' ? 0 : 4000), // Varningar stannar tills de stängs
-      persistent: options.persistent || type === 'warning',
-      global: options.global || false, // Ny: markera som global notifikation
-      route: options.global ? null : (router?.currentRoute.value.path || null), // Spara rutt för lokala notifikationer
-      ...options
+      isGlobal: options.isGlobal || false,
+      duration: options.duration || (type === 'error' ? 8000 : 5000),
+      createdAt: Date.now()
     }
-    
-    notifications.value.push(notification)
-    
-    // Auto-remove efter duration (om inte persistent)
-    if (!notification.persistent && notification.duration > 0) {
+
+    notifications.value.unshift(notification)
+
+    // Auto-remove efter duration (om inte global)
+    if (!notification.isGlobal && notification.duration > 0) {
       setTimeout(() => {
-        removeNotification(id)
+        removeNotification(notification.id)
       }, notification.duration)
     }
-    
-    return id
+
+    return notification.id
   }
 
-  // Ta bort en notifikation
+  // Ta bort notifikation
   const removeNotification = (id) => {
     const index = notifications.value.findIndex(n => n.id === id)
     if (index > -1) {
@@ -57,136 +51,115 @@ export function useNotifications() {
     }
   }
 
+  // Rensa lokala notifikationer (vid navigering)
+  const clearLocalNotifications = () => {
+    notifications.value = notifications.value.filter(n => n.isGlobal)
+  }
+
   // Rensa alla notifikationer
-  const clearNotifications = () => {
+  const clearAllNotifications = () => {
     notifications.value = []
   }
 
-  // Rensa lokala notifikationer (vid sidnavigering)
-  const clearLocalNotifications = () => {
-    notifications.value = notifications.value.filter(n => n.global === true)
-  }
-
-  // Rensa notifikationer av en viss typ
-  const clearNotificationsOfType = (type) => {
-    notifications.value = notifications.value.filter(n => n.type !== type)
-  }
-
-  // Rensa lokala notifikationer av en viss typ
+  // Rensa notifikationer av viss typ
   const clearLocalNotificationsOfType = (type) => {
-    notifications.value = notifications.value.filter(n => 
-      n.type !== type || n.global === true
+    notifications.value = notifications.value.filter(
+      n => n.isGlobal || n.type !== type
     )
   }
 
-  // Bekvämlighetsmetoder för olika typer - LOKALA som standard
-  const warning = (title, message, options = {}) => {
-    return addNotification('warning', title, message, { 
-      persistent: true, 
-      global: false, // Lokala som standard
-      ...options 
-    })
-  }
-
+  // Lokala notifikationer (försvinner vid navigering)
   const success = (title, message, options = {}) => {
-    return addNotification('success', title, message, { 
-      duration: 4000, 
-      global: false, // Lokala som standard
-      ...options 
-    })
+    return addNotification('success', title, message, { ...options, isGlobal: false })
   }
 
   const error = (title, message, options = {}) => {
-    return addNotification('error', title, message, { 
-      duration: 6000, 
-      global: false, // Lokala som standard
-      ...options 
-    })
+    return addNotification('error', title, message, { ...options, isGlobal: false })
+  }
+
+  const warning = (title, message, options = {}) => {
+    return addNotification('warning', title, message, { ...options, isGlobal: false })
   }
 
   const info = (title, message, options = {}) => {
-    return addNotification('info', title, message, { 
-      duration: 4000, 
-      global: false, // Lokala som standard
-      ...options 
-    })
+    return addNotification('info', title, message, { ...options, isGlobal: false })
   }
 
-  // Globala versioner av metoderna
-  const globalWarning = (title, message, options = {}) => {
-    return addNotification('warning', title, message, { 
-      persistent: true, 
-      global: true, 
-      ...options 
-    })
-  }
-
+  // Globala notifikationer (kvarstår)
   const globalSuccess = (title, message, options = {}) => {
-    return addNotification('success', title, message, { 
-      duration: 4000, 
-      global: true, 
-      ...options 
-    })
+    return addNotification('success', title, message, { ...options, isGlobal: true })
   }
 
   const globalError = (title, message, options = {}) => {
-    return addNotification('error', title, message, { 
-      duration: 6000, 
-      global: true, 
-      ...options 
-    })
+    return addNotification('error', title, message, { ...options, isGlobal: true })
+  }
+
+  const globalWarning = (title, message, options = {}) => {
+    return addNotification('warning', title, message, { ...options, isGlobal: true })
   }
 
   const globalInfo = (title, message, options = {}) => {
-    return addNotification('info', title, message, { 
-      duration: 4000, 
-      global: true, 
-      ...options 
+    return addNotification('info', title, message, { ...options, isGlobal: true })
+  }
+
+  // Bekräftelsedialog
+  const confirm = (title, message, options = {}) => {
+    return new Promise((resolve) => {
+      const defaultOptions = {
+        confirmText: 'OK',
+        cancelText: 'Avbryt',
+        confirmVariant: 'default'
+      }
+      
+      const finalOptions = { ...defaultOptions, ...options }
+      
+      const confirmNotification = {
+        id: nextId.value++,
+        type: 'confirm',
+        title,
+        message,
+        isGlobal: true,
+        options: finalOptions,
+        resolve,
+        createdAt: Date.now()
+      }
+
+      notifications.value.unshift(confirmNotification)
     })
   }
 
-  // Bekräftelsedialog - alltid lokal
-  const confirm = (title, message, options = {}) => {
-    return new Promise((resolve) => {
-      const id = addNotification('confirm', title, message, {
-        persistent: true,
-        global: false, // Bekräftelser är alltid lokala
-        onConfirm: () => {
-          removeNotification(id)
-          resolve(true)
-        },
-        onCancel: () => {
-          removeNotification(id)
-          resolve(false)
-        },
-        confirmText: options.confirmText || 'Bekräfta',
-        cancelText: options.cancelText || 'Avbryt',
-        confirmVariant: options.confirmVariant || 'destructive',
-        ...options
-      })
-    })
+  // Hantera bekräftelse
+  const handleConfirm = (id, confirmed) => {
+    const notification = notifications.value.find(n => n.id === id)
+    if (notification && notification.resolve) {
+      notification.resolve(confirmed)
+      removeNotification(id)
+    }
   }
 
   return {
-    notifications,
-    addNotification,
-    removeNotification,
-    clearNotifications,
-    clearLocalNotifications,
-    clearNotificationsOfType,
-    clearLocalNotificationsOfType,
+    notifications: notifications,
     
-    // Lokala notifikationer (standard)
-    warning,
+    // Lokala notifikationer
     success,
     error,
+    warning,
     info,
-    confirm,
     
     // Globala notifikationer
-    globalWarning,
     globalSuccess,
     globalError,
-    globalInfo
+    globalWarning,
+    globalInfo,
+    
+    // Bekräftelse
+    confirm,
+    handleConfirm,
+    
+    // Hantering
+    removeNotification,
+    clearLocalNotifications,
+    clearAllNotifications,
+    clearLocalNotificationsOfType
   }
 } 

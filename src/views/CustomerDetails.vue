@@ -4,6 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/composables/useToast'
+import { useNotifications } from '@/composables/useNotifications'
+import { useValidation } from '@/composables/useValidation'
 import { Building2, MapPin, Receipt } from 'lucide-vue-next'
 import PageLayout from '@/components/custom/PageLayout.vue'
 import StatusNotification from '@/components/custom/StatusNotification.vue'
@@ -18,6 +20,8 @@ import Kontaktpersoner from '../components/custom/KontaktPersoner.vue'
 const route = useRoute()
 const router = useRouter()
 const { success, error } = useToast()
+const { success: notificationSuccess, error: notificationError, confirm } = useNotifications()
+const { validateAll, validateField, touchField, hasError, getError, isRequired, clearErrors, allErrors } = useValidation()
 const customerStore = useCustomerStore()
 
 // Get customer from store using computed to make it reactive
@@ -39,6 +43,30 @@ const newContact = ref({
   isMainContact: false
 })
 
+// Validation schema for customer data
+const validationSchema = {
+  companyName: {
+    rules: ['required'],
+    displayName: 'Företagsnamn'
+  },
+  organizationNumber: {
+    rules: ['organizationNumber'],
+    displayName: 'Organisationsnummer'
+  },
+  companyEmail: {
+    rules: ['email'],
+    displayName: 'E-postadress'
+  },
+  website: {
+    rules: ['website'],
+    displayName: 'Webbplats'
+  },
+  switchboardNumber: {
+    rules: ['phone'],
+    displayName: 'Växelnummer'
+  }
+}
+
 onMounted(() => {
   if (!customer.value) {
     router.push('/customers')
@@ -59,10 +87,20 @@ const handleFieldChange = () => {
 const saveChanges = () => {
   try {
     if (editedCustomer.value && customer.value) {
+      // Validate customer data
+      const isValid = validateAll(editedCustomer.value, validationSchema)
+      
+      if (!isValid) {
+        Object.keys(validationSchema).forEach(touchField)
+        notificationError('Valideringsfel', 'Kontrollera att alla fält är korrekt ifyllda innan du sparar.')
+        return
+      }
+
       // Update customer in store
       customerStore.updateCustomer(editedCustomer.value)
       hasChanges.value = false
       showSaveConfirmation.value = true
+      clearErrors()
       
       // Dölj bekräftelsen efter 4 sekunder
       setTimeout(() => {
@@ -70,10 +108,9 @@ const saveChanges = () => {
       }, 4000)
     }
   } catch (err) {
-    error(
+    notificationError(
       'Fel vid sparande',
-      'Kunde inte spara ändringarna. Försök igen.',
-      { duration: 4000 }
+      'Kunde inte spara ändringarna. Försök igen.'
     )
   }
 }
@@ -88,6 +125,20 @@ const resetChanges = () => {
     setTimeout(() => {
       showSaveConfirmation.value = false
     }, 3000)
+  }
+}
+
+// Handle field blur for validation
+const handleFieldBlur = (fieldName: string) => {
+  if (editedCustomer.value && validationSchema[fieldName as keyof typeof validationSchema]) {
+    touchField(fieldName)
+    const config = validationSchema[fieldName as keyof typeof validationSchema]
+    validateField(
+      fieldName,
+      editedCustomer.value[fieldName as keyof typeof editedCustomer.value],
+      config.rules,
+      config.displayName
+    )
   }
 }
 
@@ -123,7 +174,7 @@ const saveNewContact = () => {
     }
     
     showAddContactDialog.value = false
-    success('Kontaktperson tillagd', 'Den nya kontaktpersonen har lagts till framgångsrikt.')
+    notificationSuccess('Kontaktperson tillagd', 'Den nya kontaktpersonen har lagts till framgångsrikt.')
   }
 }
 
@@ -143,7 +194,7 @@ const handleAddContact = (contact: any) => {
       customerStore.setMainContact(customer.value.id, newContactId)
     }
     
-    success('Kontaktperson tillagd', 'Den nya kontaktpersonen har lagts till framgångsrikt.')
+    notificationSuccess('Kontaktperson tillagd', 'Den nya kontaktpersonen har lagts till framgångsrikt.')
   }
 }
 
@@ -151,9 +202,28 @@ const handleSendEmail = (email: string) => {
   window.location.href = `mailto:${email}`
 }
 
-const handleDeleteContact = (id: number, name: string) => {
-  customerStore.removeContactPerson(id)
-  success('Kontaktperson borttagen', `${name} har tagits bort från kontaktlistan.`)
+const handleDeleteContact = async (id: number, name: string) => {
+  const confirmed = await confirm(
+    'Ta bort kontaktperson',
+    `Är du säker på att du vill ta bort ${name} från kontaktlistan?`,
+    {
+      confirmText: 'Ta bort',
+      cancelText: 'Avbryt',
+      confirmVariant: 'destructive'
+    }
+  )
+
+  if (confirmed) {
+    customerStore.removeContactPerson(id)
+    notificationSuccess('Kontaktperson borttagen', `${name} har tagits bort från kontaktlistan.`)
+  }
+}
+
+const handleEditContact = (person: any) => {
+  // Navigera till en redigeringssida eller öppna en modal för redigering
+  // För nu loggar vi bara kontaktpersonen
+  console.log('Edit contact:', person)
+  notificationSuccess('Redigera kontaktperson', `Redigeringsfunktion för ${person.name} kommer snart.`)
 }
 </script>
 
@@ -217,7 +287,9 @@ const handleDeleteContact = (id: number, name: string) => {
         <TabsContent value="general" class="mt-6">
           <TabAllmant 
             :edited-customer="editedCustomer" 
+            :errors="allErrors"
             @field-change="handleFieldChange"
+            @field-blur="handleFieldBlur"
           />
         </TabsContent>
 
@@ -226,6 +298,7 @@ const handleDeleteContact = (id: number, name: string) => {
           <TabBesok 
             :edited-customer="editedCustomer" 
             @field-change="handleFieldChange"
+            @field-blur="handleFieldBlur"
           />
         </TabsContent>
 
@@ -234,6 +307,7 @@ const handleDeleteContact = (id: number, name: string) => {
           <TabFaktura 
             :edited-customer="editedCustomer" 
             @field-change="handleFieldChange"
+            @field-blur="handleFieldBlur"
           />
         </TabsContent>
       </Tabs>
@@ -244,6 +318,7 @@ const handleDeleteContact = (id: number, name: string) => {
         @add-contact="handleAddContact"
         @delete-contact="handleDeleteContact"
         @send-email="handleSendEmail"
+        @edit-contact="handleEditContact"
       />
     </div>
   </PageLayout>

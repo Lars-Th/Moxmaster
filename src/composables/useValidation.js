@@ -1,131 +1,127 @@
 import { ref, computed } from 'vue'
 
-export function useValidation() {
-  const errors = ref({})
-  const touched = ref({})
+// Global state för validering
+const errors = ref({})
+const touchedFields = ref({})
 
+export function useValidation() {
   // Valideringsregler
-  const rules = {
+  const validationRules = {
     required: (value, fieldName) => {
-      if (!value || (typeof value === 'string' && value.trim() === '')) {
+      if (!value || value.toString().trim() === '') {
         return `${fieldName} är obligatoriskt`
       }
       return null
     },
-    
+
     email: (value, fieldName) => {
-      if (!value) return null // Om fältet inte är obligatoriskt
+      if (!value) return null // Om inte required kommer det fångas av required-regeln
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
       if (!emailRegex.test(value)) {
         return `${fieldName} måste vara en giltig e-postadress`
       }
       return null
     },
-    
+
     phone: (value, fieldName) => {
-      if (!value) return null // Om fältet inte är obligatoriskt
+      if (!value) return null
       const phoneRegex = /^[\d\s\-\+\(\)]+$/
       if (!phoneRegex.test(value)) {
-        return `${fieldName} måste vara ett giltigt telefonnummer`
+        return `${fieldName} får endast innehålla siffror, mellanslag och bindestreck`
       }
       return null
     },
-    
+
     organizationNumber: (value, fieldName) => {
-      if (!value) return null // Om fältet inte är obligatoriskt
+      if (!value) return null
       const orgRegex = /^\d{6}-\d{4}$/
       if (!orgRegex.test(value)) {
         return `${fieldName} måste ha formatet 556123-4567`
       }
       return null
     },
-    
+
     postalCode: (value, fieldName) => {
-      if (!value) return null // Om fältet inte är obligatoriskt
+      if (!value) return null
       const postalRegex = /^\d{5}$/
       if (!postalRegex.test(value)) {
         return `${fieldName} måste vara 5 siffror`
       }
       return null
     },
-    
+
     website: (value, fieldName) => {
-      if (!value) return null // Om fältet inte är obligatoriskt
-      const websiteRegex = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/
-      if (!websiteRegex.test(value)) {
-        return `${fieldName} måste vara en giltig webbadress`
+      if (!value) return null
+      const urlRegex = /^https?:\/\/.+\..+/
+      if (!urlRegex.test(value)) {
+        return `${fieldName} måste vara en giltig webbadress som börjar med http:// eller https://`
       }
       return null
     }
   }
 
   // Validera ett enskilt fält
-  const validateField = (fieldName, value, fieldRules, displayName) => {
-    const fieldErrors = []
-    
-    if (fieldRules && Array.isArray(fieldRules)) {
-      for (const rule of fieldRules) {
-        if (typeof rule === 'string' && rules[rule]) {
-          const error = rules[rule](value, displayName || fieldName)
-          if (error) {
-            fieldErrors.push(error)
-          }
-        } else if (typeof rule === 'function') {
-          const error = rule(value, displayName || fieldName)
-          if (error) {
-            fieldErrors.push(error)
-          }
+  const validateField = (fieldName, value, rules, displayName) => {
+    const fieldDisplayName = displayName || fieldName
+
+    // Rensa tidigare fel för detta fält
+    errors.value[fieldName] = null
+
+    // Kör igenom alla regler för fältet
+    for (const rule of rules) {
+      if (validationRules[rule]) {
+        const error = validationRules[rule](value, fieldDisplayName)
+        if (error) {
+          errors.value[fieldName] = error
+          break // Avbryt vid första felet
         }
       }
     }
-    
-    if (fieldErrors.length > 0) {
-      errors.value[fieldName] = fieldErrors[0] // Visa bara första felet
-    } else {
-      delete errors.value[fieldName]
-    }
-    
-    return fieldErrors.length === 0
+
+    return !errors.value[fieldName]
   }
 
   // Validera alla fält enligt schema
   const validateAll = (data, schema) => {
-    errors.value = {}
     let isValid = true
-    
-    for (const [fieldName, config] of Object.entries(schema)) {
+
+    Object.keys(schema).forEach(fieldName => {
+      const fieldConfig = schema[fieldName]
       const value = data[fieldName]
-      const fieldValid = validateField(
-        fieldName, 
-        value, 
-        config.rules, 
-        config.displayName || fieldName
+      
+      touchedFields.value[fieldName] = true
+      
+      const fieldIsValid = validateField(
+        fieldName,
+        value,
+        fieldConfig.rules,
+        fieldConfig.displayName
       )
       
-      if (!fieldValid) {
+      if (!fieldIsValid) {
         isValid = false
       }
-    }
-    
+    })
+
     return isValid
   }
 
-  // Markera fält som "touched" (användaren har interagerat med det)
+  // Markera fält som "touched"
   const touchField = (fieldName) => {
-    touched.value[fieldName] = true
+    touchedFields.value[fieldName] = true
   }
 
-  // Kontrollera om ett fält har fel och har blivit "touched"
+  // Kontrollera om fält har fel
   const hasError = (fieldName) => {
-    return touched.value[fieldName] && errors.value[fieldName]
+    return touchedFields.value[fieldName] && errors.value[fieldName]
   }
 
-  // Hämta felmeddelande för ett fält
+  // Hämta felmeddelande för fält
   const getError = (fieldName) => {
     return hasError(fieldName) ? errors.value[fieldName] : null
   }
 
-  // Kontrollera om ett fält är obligatoriskt enligt schema
+  // Kontrollera om fält är obligatoriskt
   const isRequired = (fieldName, schema) => {
     return schema[fieldName]?.rules?.includes('required') || false
   }
@@ -133,36 +129,43 @@ export function useValidation() {
   // Rensa alla fel
   const clearErrors = () => {
     errors.value = {}
-    touched.value = {}
+    touchedFields.value = {}
   }
 
   // Rensa fel för specifikt fält
   const clearFieldError = (fieldName) => {
-    delete errors.value[fieldName]
-    delete touched.value[fieldName]
+    errors.value[fieldName] = null
+    touchedFields.value[fieldName] = false
   }
 
-  // Computed för att kontrollera om formuläret har några fel
+  // Computed properties
   const hasAnyErrors = computed(() => {
-    return Object.keys(errors.value).length > 0
+    return Object.values(errors.value).some(error => error !== null)
   })
 
-  // Computed för att få alla felmeddelanden
   const allErrors = computed(() => {
-    return Object.values(errors.value).filter(Boolean)
+    return Object.entries(errors.value)
+      .filter(([_, error]) => error !== null)
+      .reduce((acc, [field, error]) => {
+        acc[field] = error
+        return acc
+      }, {})
   })
 
   return {
-    errors,
-    touched,
+    // Validering
     validateField,
     validateAll,
+    
+    // State management
     touchField,
+    clearErrors,
+    clearFieldError,
+    
+    // Getters
     hasError,
     getError,
     isRequired,
-    clearErrors,
-    clearFieldError,
     hasAnyErrors,
     allErrors
   }

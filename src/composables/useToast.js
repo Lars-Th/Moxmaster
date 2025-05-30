@@ -1,9 +1,12 @@
 import { ref } from 'vue'
+import { useNotifications } from './useNotifications'
 
 const toasts = ref([])
 let toastId = 0
 
 export function useToast() {
+  const notifications = useNotifications()
+
   const showToast = (options) => {
     const id = ++toastId
     const toast = {
@@ -79,10 +82,11 @@ export function useToast() {
     toasts,
     showToast,
     removeToast,
-    success,
-    error,
-    warning,
-    info,
+    success: notifications.success,
+    error: notifications.error,
+    warning: notifications.warning,
+    info: notifications.info,
+    confirm: notifications.confirm,
     clearAll
   }
 } 

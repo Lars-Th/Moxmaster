@@ -11,7 +11,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu'
-import ToastContainer from '@/components/custom/ToastContainer.vue'
+import ToastContainer from '@/components/ui/ToastContainer.vue'
 import { computed, ref, onMounted } from 'vue'
 import { 
   Palette,
