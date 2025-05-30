@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { RouterView, useRouter, useRoute } from 'vue-router'
+import { navigationItems } from '@/router/router'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { 
@@ -13,29 +14,14 @@ import {
 import ToastContainer from '@/components/custom/ToastContainer.vue'
 import { computed, ref, onMounted } from 'vue'
 import { 
-  Home, 
-  TestTube, 
-  LayoutDashboard, 
-  Users, 
-  Settings, 
   Palette,
   User,
   LogOut,
-  UserCheck,
-  Bot
+  Settings
 } from 'lucide-vue-next'
 
 const router = useRouter()
 const route = useRoute()
-
-const navigationItems = [
-  { name: 'Home', path: '/', icon: Home },
-  { name: 'Test', path: '/test', icon: TestTube },
-  { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-  { name: 'Kunder', path: '/customers', icon: Users },
-  { name: 'Kontaktpersoner', path: '/contacts', icon: UserCheck },
-  { name: 'Settings', path: '/settings', icon: Settings }
-]
 
 const themes = [
   { name: 'Default', value: 'default', class: '' },

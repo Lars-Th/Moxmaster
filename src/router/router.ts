@@ -1,4 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { 
+  Home, 
+  TestTube, 
+  LayoutDashboard, 
+  Users, 
+  Settings as SettingsIcon,
+  UserCheck
+} from 'lucide-vue-next'
 import Dashboard from '@/views/Dashboard.vue'
 import Settings from '@/views/Settings.vue'
 import Test from '@/views/Test.vue'
@@ -6,40 +14,67 @@ import Customers from '@/views/Customers.vue'
 import CustomerDetails from '@/views/CustomerDetails.vue'
 import Contacts from '@/views/Contacts.vue'
 
+// Single source of truth for routes and navigation
+const routeDefinitions = [
+  {
+    path: '/',
+    name: 'dashboard',
+    component: Dashboard,
+    navigation: { name: 'Home', icon: Home }
+  },
+  {
+    path: '/test',
+    name: 'test',
+    component: Test,
+    navigation: { name: 'Test', icon: TestTube }
+  },
+  {
+    path: '/dashboard',
+    name: 'dashboard-alt',
+    component: Dashboard,
+    navigation: { name: 'Dashboard', icon: LayoutDashboard }
+  },
+  {
+    path: '/customers',
+    name: 'customers',
+    component: Customers,
+    navigation: { name: 'Kunder', icon: Users }
+  },
+  {
+    path: '/customers/:id',
+    name: 'customer-details',
+    component: CustomerDetails
+    // No navigation property means it won't appear in nav
+  },
+  {
+    path: '/contacts',
+    name: 'contacts',
+    component: Contacts,
+    navigation: { name: 'Kontaktpersoner', icon: UserCheck }
+  },
+  {
+    path: '/settings',
+    name: 'settings',
+    component: Settings,
+    navigation: { name: 'Settings', icon: SettingsIcon }
+  }
+]
+
+// Derive navigationItems from routeDefinitions
+export const navigationItems = routeDefinitions
+  .filter(route => route.navigation)
+  .map(route => ({
+    name: route.navigation!.name,
+    path: route.path,
+    icon: route.navigation!.icon
+  }))
+
+// Derive routes from routeDefinitions
+const routes = routeDefinitions.map(({ navigation, ...route }) => route)
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [
-    {
-      path: '/',
-      name: 'dashboard',
-      component: Dashboard
-    },
-    {
-      path: '/settings',
-      name: 'settings',
-      component: Settings
-    },
-    {
-      path: '/test',
-      name: 'test',
-      component: Test
-    },
-    {
-      path: '/customers',
-      name: 'customers',
-      component: Customers
-    },
-    {
-      path: '/customers/:id',
-      name: 'customer-details',
-      component: CustomerDetails
-    },
-    {
-      path: '/contacts',
-      name: 'contacts',
-      component: Contacts
-    }
-  ]
+  routes
 })
 
 // Navigation guards
