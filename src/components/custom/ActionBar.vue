@@ -1,82 +1,205 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button'
-import SearchFilterBar from './SearchFilterBar.vue'
-
-interface FilterOption {
-  value: string
-  label: string
-}
-
-interface ActionButton {
-  label: string
-  icon?: any
-  onClick: () => void
-  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'
-  size?: 'default' | 'sm' | 'lg' | 'icon'
-  class?: string
-}
+import { Eye, Edit, Trash2, Mail, Phone, MoreHorizontal } from 'lucide-vue-next'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
+} from '@/components/ui/dropdown-menu'
 
 interface Props {
-  // Action buttons props
-  actionButtons?: ActionButton[]
-  
-  // Search filter props
-  searchQuery: string
-  statusFilter: string
-  searchPlaceholder?: string
-  filterOptions?: FilterOption[]
-  showActiveFilters?: boolean
+  item: any
+  showView?: boolean
+  showEdit?: boolean
+  showDelete?: boolean
+  showEmail?: boolean
+  showPhone?: boolean
+  showMore?: boolean
+  compact?: boolean
+  variant?: 'default' | 'dropdown'
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  actionButtons: () => [],
-  searchPlaceholder: 'Sök...',
-  filterOptions: () => [],
-  showActiveFilters: true
+  showView: true,
+  showEdit: true,
+  showDelete: true,
+  showEmail: false,
+  showPhone: false,
+  showMore: false,
+  compact: false,
+  variant: 'default'
 })
 
 const emit = defineEmits<{
-  'update:searchQuery': [value: string]
-  'update:statusFilter': [value: string]
+  view: [item: any, event: Event]
+  edit: [item: any, event: Event]
+  delete: [item: any, event: Event]
+  email: [item: any, event: Event]
+  phone: [item: any, event: Event]
+  action: [action: string, item: any, event: Event]
 }>()
 
-const updateSearchQuery = (value: string) => {
-  emit('update:searchQuery', value)
+const handleView = (event: Event) => {
+  event.stopPropagation()
+  emit('view', props.item, event)
 }
 
-const updateStatusFilter = (value: string) => {
-  emit('update:statusFilter', value)
+const handleEdit = (event: Event) => {
+  event.stopPropagation()
+  emit('edit', props.item, event)
+}
+
+const handleDelete = (event: Event) => {
+  event.stopPropagation()
+  emit('delete', props.item, event)
+}
+
+const handleEmail = (event: Event) => {
+  event.stopPropagation()
+  emit('email', props.item, event)
+}
+
+const handlePhone = (event: Event) => {
+  event.stopPropagation()
+  emit('phone', props.item, event)
+}
+
+const handleCustomAction = (action: string, event: Event) => {
+  event.stopPropagation()
+  emit('action', action, props.item, event)
 }
 </script>
 
 <template>
-  <div class="p-2 flex justify-between">
-    <!-- Action buttons on the left -->
-    <div class="flex gap-2">
-      <Button
-        v-for="(button, index) in actionButtons"
-        :key="index"
-        @click="button.onClick"
-        :variant="button.variant || 'default'"
-        :size="button.size || 'default'"
-        :class="[button.class, 'cursor-pointer']"
-      >
-        <component :is="button.icon" v-if="button.icon" class="h-3 w-3 mr-1" />
-        {{ button.label }}
-      </Button>
-    </div>
+  <!-- Default variant - inline buttons -->
+  <div v-if="variant === 'default'" class="flex items-center space-x-1">
+    <Button
+      v-if="showView"
+      variant="ghost"
+      :size="compact ? 'sm' : 'sm'"
+      @click="handleView"
+      :class="compact ? 'h-6 w-6 p-0' : 'h-8 w-8 p-0'"
+      title="Visa detaljer"
+    >
+      <Eye :class="compact ? 'h-3 w-3' : 'h-4 w-4'" />
+    </Button>
+    
+    <Button
+      v-if="showEdit"
+      variant="ghost"
+      :size="compact ? 'sm' : 'sm'"
+      @click="handleEdit"
+      :class="compact ? 'h-6 w-6 p-0' : 'h-8 w-8 p-0'"
+      title="Redigera"
+    >
+      <Edit :class="compact ? 'h-3 w-3' : 'h-4 w-4'" />
+    </Button>
+    
+    <Button
+      v-if="showEmail && item.email"
+      variant="ghost"
+      :size="compact ? 'sm' : 'sm'"
+      @click="handleEmail"
+      :class="compact ? 'h-6 w-6 p-0' : 'h-8 w-8 p-0'"
+      title="Skicka e-post"
+    >
+      <Mail :class="compact ? 'h-3 w-3' : 'h-4 w-4'" />
+    </Button>
+    
+    <Button
+      v-if="showPhone && item.phone"
+      variant="ghost"
+      :size="compact ? 'sm' : 'sm'"
+      @click="handlePhone"
+      :class="compact ? 'h-6 w-6 p-0' : 'h-8 w-8 p-0'"
+      title="Ring"
+    >
+      <Phone :class="compact ? 'h-3 w-3' : 'h-4 w-4'" />
+    </Button>
+    
+    <Button
+      v-if="showDelete"
+      variant="ghost"
+      :size="compact ? 'sm' : 'sm'"
+      @click="handleDelete"
+      :class="[
+        compact ? 'h-6 w-6 p-0' : 'h-8 w-8 p-0',
+        'text-red-600 hover:text-red-700 hover:bg-red-50'
+      ]"
+      title="Ta bort"
+    >
+      <Trash2 :class="compact ? 'h-3 w-3' : 'h-4 w-4'" />
+    </Button>
+    
+    <!-- Custom actions slot -->
+    <slot name="actions" :item="item" />
+  </div>
 
-    <!-- Search filter bar on the right -->
-    <div class="flex-shrink-0">
-      <SearchFilterBar
-        :search-query="searchQuery"
-        :status-filter="statusFilter"
-        :search-placeholder="searchPlaceholder"
-        :filter-options="filterOptions"
-        :show-active-filters="showActiveFilters"
-        @update:search-query="updateSearchQuery"
-        @update:status-filter="updateStatusFilter"
-      />
-    </div>
+  <!-- Dropdown variant - more compact for mobile or when space is limited -->
+  <div v-else-if="variant === 'dropdown'">
+    <DropdownMenu>
+      <DropdownMenuTrigger as-child>
+        <Button
+          variant="ghost"
+          :size="compact ? 'sm' : 'sm'"
+          :class="compact ? 'h-6 w-6 p-0' : 'h-8 w-8 p-0'"
+        >
+          <MoreHorizontal :class="compact ? 'h-3 w-3' : 'h-4 w-4'" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" class="w-48">
+        <DropdownMenuItem
+          v-if="showView"
+          @click="handleView"
+          class="cursor-pointer"
+        >
+          <Eye class="mr-2 h-4 w-4" />
+          Visa detaljer
+        </DropdownMenuItem>
+        
+        <DropdownMenuItem
+          v-if="showEdit"
+          @click="handleEdit"
+          class="cursor-pointer"
+        >
+          <Edit class="mr-2 h-4 w-4" />
+          Redigera
+        </DropdownMenuItem>
+        
+        <DropdownMenuItem
+          v-if="showEmail && item.email"
+          @click="handleEmail"
+          class="cursor-pointer"
+        >
+          <Mail class="mr-2 h-4 w-4" />
+          Skicka e-post
+        </DropdownMenuItem>
+        
+        <DropdownMenuItem
+          v-if="showPhone && item.phone"
+          @click="handlePhone"
+          class="cursor-pointer"
+        >
+          <Phone class="mr-2 h-4 w-4" />
+          Ring
+        </DropdownMenuItem>
+        
+        <!-- Custom actions slot for dropdown -->
+        <slot name="dropdown-actions" :item="item" />
+        
+        <DropdownMenuSeparator v-if="showDelete" />
+        
+        <DropdownMenuItem
+          v-if="showDelete"
+          @click="handleDelete"
+          class="cursor-pointer text-red-600 focus:text-red-600"
+        >
+          <Trash2 class="mr-2 h-4 w-4" />
+          Ta bort
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   </div>
 </template> 

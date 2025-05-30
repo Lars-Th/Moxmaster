@@ -2,10 +2,10 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useContactStore } from '@/stores/contactStore'
+import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-vue-next'
 import PageLayout from '@/components/custom/PageLayout.vue'
 import DataTable from '@/components/custom/DataTable.vue'
-import ActionBar from '@/components/custom/ActionBar.vue'
 
 const router = useRouter()
 const contactStore = useContactStore()
@@ -49,16 +49,6 @@ const filterOptions = [
   { value: 'false', label: 'Kontakter' }
 ]
 
-// Action buttons configuration
-const actionButtons = [
-  {
-    label: 'Lägg till ny kontakt',
-    icon: Plus,
-    onClick: addNewContact,
-    class: 'text-xs h-8'
-  }
-]
-
 // Transform contacts data to match filter expectations
 const transformedContacts = computed(() => {
   return contactStore.contacts.map(contact => ({
@@ -73,13 +63,28 @@ const transformedContacts = computed(() => {
 // Statistik för PageLayout
 const stats = computed(() => [
   {
-    value: contactStore.totalContacts,
-    label: 'Totalt kontakter'
+    title: 'Totalt kontakter',
+    value: contactStore.totalContacts.toString(),
+    change: '+8%',
+    trend: 'up' as const
   },
   {
-    value: contactStore.mainContacts.length,
-    label: 'Huvudkontakter',
-    color: 'text-green-600'
+    title: 'Huvudkontakter',
+    value: contactStore.mainContacts.length.toString(),
+    change: '+3%',
+    trend: 'up' as const
+  },
+  {
+    title: 'Nya denna månad',
+    value: '12',
+    change: '+20%',
+    trend: 'up' as const
+  },
+  {
+    title: 'Aktiva företag',
+    value: '45',
+    change: '+5%',
+    trend: 'up' as const
   }
 ])
 
@@ -105,9 +110,17 @@ const deleteContact = (contact: any, event: Event) => {
   <PageLayout
     title="Kontaktpersoner"
     :breadcrumbs="`Home / Kontaktpersoner (${contactStore.totalContacts})`"
-    :show-stats="true"
     :stats="stats"
   >
+    <template #actions>
+      <div class="space-x-2">
+        <Button @click="addNewContact" class="text-xs h-8">
+          <Plus class="h-3 w-3 mr-1" />
+          Lägg till ny kontakt
+        </Button>
+      </div>
+    </template>
+
     <DataTable
       :data="transformedContacts"
       :columns="columns"
@@ -118,18 +131,6 @@ const deleteContact = (contact: any, event: Event) => {
       :on-send-email="sendEmail"
       :on-delete="deleteContact"
       delete-confirm-message="Är du säker på att du vill radera denna kontakt?"
-    >
-      <template #filters="{ searchQuery, statusFilter, filterOptions, updateSearchQuery, updateStatusFilter }">
-        <ActionBar
-          :action-buttons="actionButtons"
-          :search-query="searchQuery"
-          :status-filter="statusFilter"
-          search-placeholder="Sök på namn, företag eller telefon..."
-          :filter-options="filterOptions"
-          @update:search-query="updateSearchQuery"
-          @update:status-filter="updateStatusFilter"
-        />
-      </template>
-    </DataTable>
+    />
   </PageLayout>
 </template> 

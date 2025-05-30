@@ -1,9 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import Dashboard from '@/components/views/Dashboard.vue'
-import Customers from '@/components/views/Customers.vue'
-import CustomerDetails from '@/components/views/CustomerDetails.vue'
-import Contacts from '@/components/views/Contacts.vue'
+import Dashboard from '@/views/Dashboard.vue'
+import Customers from '@/views/Customers.vue'
+import CustomerDetails from '@/views/CustomerDetails.vue'
+import Contacts from '@/views/Contacts.vue'
+import WorkOrders from '@/views/WorkOrders.vue'
+import WorkOrderDetails from '@/views/WorkOrderDetails.vue'
+import Machines from '@/views/Machines.vue'
+import Tools from '@/views/Tools.vue'
 import Prospector from '@/views/Prospector.vue'
+import Settings from '@/views/Settings.vue'
 import NotificationDemo from '@/components/views/NotificationDemo.vue'
 import ValidationDemo from '@/components/views/ValidationDemo.vue'
 
@@ -31,9 +36,39 @@ const router = createRouter({
       component: Contacts
     },
     {
+      path: '/work-orders',
+      name: 'work-orders',
+      component: WorkOrders
+    },
+    {
+      path: '/work-orders/new',
+      name: 'work-order-new',
+      component: WorkOrderDetails
+    },
+    {
+      path: '/work-orders/:id',
+      name: 'work-order-details',
+      component: WorkOrderDetails
+    },
+    {
+      path: '/machines',
+      name: 'machines',
+      component: Machines
+    },
+    {
+      path: '/tools',
+      name: 'tools',
+      component: Tools
+    },
+    {
       path: '/prospector',
       name: 'prospector',
       component: Prospector
+    },
+    {
+      path: '/settings',
+      name: 'settings',
+      component: Settings
     },
     {
       path: '/demo',
