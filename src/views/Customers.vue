@@ -3,7 +3,8 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCustomerStore } from '@/stores/customerStore'
 import { Plus } from 'lucide-vue-next'
-import PageLayout from '@/components/custom/PageLayout.vue'
+import TitleBreadcrumbs from '@/components/custom/TitleBreadcrumbs.vue'
+import TitleAnalytics from '@/components/custom/TitleAnalytics.vue'
 import DataTable from '@/components/custom/DataTable.vue'
 import ActionBar from '@/components/custom/ActionBar.vue'
 
@@ -101,34 +102,63 @@ const deleteCustomer = (customer: any, event: Event) => {
 </script>
 
 <template>
-  <PageLayout
-    title="Kunder"
-    breadcrumbs="Home / Kunder"
-    :show-stats="true"
-    :stats="stats"
-  >
-    <DataTable
-      :data="customerStore.customers"
-      :columns="columns"
-      :search-fields="['name', 'city', 'companyName']"
-      filter-field="status"
-      :filter-options="filterOptions"
-      :on-row-click="viewCustomerDetails"
-      :on-send-email="sendEmail"
-      :on-delete="deleteCustomer"
-      delete-confirm-message="Är du säker på att du vill radera denna kund?"
-    >
-      <template #filters="{ searchQuery, statusFilter, filterOptions, updateSearchQuery, updateStatusFilter }">
-        <ActionBar
-          :action-buttons="actionButtons"
-          :search-query="searchQuery"
-          :status-filter="statusFilter"
-          search-placeholder="Sök på namn, ort eller företag..."
-          :filter-options="filterOptions"
-          @update:search-query="updateSearchQuery"
-          @update:status-filter="updateStatusFilter"
+  <div class="w-full">
+    <!-- Header using individual components -->
+    <div class="bg-background px-6 py-4">
+      <div class="flex flex-col gap-4">
+        <!-- Title and breadcrumbs -->
+        <TitleBreadcrumbs 
+          title="Kunder" 
+          breadcrumbs="Home / Kunder"
+          description="Manage and view all customer information"
         />
-      </template>
-    </DataTable>
-  </PageLayout>
+        
+        <!-- Analytics -->
+        <TitleAnalytics 
+          :show-stats="true" 
+          :stats="stats" 
+        />
+        
+        <!-- Actions and filters row -->
+        <div class="flex items-center justify-between h-10">
+          <!-- Action buttons on the left -->
+          <div class="flex items-center gap-2">
+            <!-- Could add action buttons here -->
+          </div>
+          
+          <!-- Search and filters on the right -->
+          <div class="flex items-center gap-2">
+            <!-- Filters will be handled by DataTable -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div>
+      <DataTable
+        :data="customerStore.customers"
+        :columns="columns"
+        :search-fields="['name', 'city', 'companyName']"
+        filter-field="status"
+        :filter-options="filterOptions"
+        :on-row-click="viewCustomerDetails"
+        :on-send-email="sendEmail"
+        :on-delete="deleteCustomer"
+        delete-confirm-message="Är du säker på att du vill radera denna kund?"
+      >
+        <template #filters="{ searchQuery, statusFilter, filterOptions, updateSearchQuery, updateStatusFilter }">
+          <ActionBar
+            :action-buttons="actionButtons"
+            :search-query="searchQuery"
+            :status-filter="statusFilter"
+            search-placeholder="Sök på namn, ort eller företag..."
+            :filter-options="filterOptions"
+            @update:search-query="updateSearchQuery"
+            @update:status-filter="updateStatusFilter"
+          />
+        </template>
+      </DataTable>
+    </div>
+  </div>
 </template> 

@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useDashboardStore } from '@/stores/dashboardStore'
 import { Button } from '@/components/ui/button'
-import PageLayout from '@/components/custom/PageLayout.vue'
+import StandardHeader from '@/components/custom/StandardHeader.vue'
 import DashboardCard from '@/components/custom/DashboardCard.vue'
 
 const dashboardStore = useDashboardStore()
@@ -12,12 +12,16 @@ const stats = computed(() => dashboardStore.stats)
 </script>
 
 <template>
-  <PageLayout
-    title="Dashboard"
-    breadcrumbs="Home / Dashboard"
-    :show-stats="true"
-    :stats="stats"
-  >
+  <div class="w-full">
+    <!-- Using StandardHeader directly -->
+    <StandardHeader
+      title="Dashboard"
+      breadcrumbs="Home / Dashboard"
+      :show-stats="true"
+      :stats="stats"
+    />
+
+    <!-- Main content -->
     <div class="p-4 space-y-4">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <DashboardCard
@@ -75,7 +79,7 @@ const stats = computed(() => dashboardStore.stats)
         </div>
       </DashboardCard>
     </div>
-  </PageLayout>
+  </div>
 </template>
 
 <style scoped>

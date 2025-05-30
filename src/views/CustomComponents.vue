@@ -32,7 +32,7 @@
 
       <!-- Debug info -->
       <div class="text-xs text-gray-400 text-center">
-        Debug: Total components: {{ totalComponents }}, Current page: {{ currentPage }}
+        Total components: {{ totalComponents }}, Current page: {{ currentPage }}
       </div>
 
       <!-- Current component display -->
@@ -47,7 +47,7 @@
         <Separator />
 
         <!-- Component showcase with error boundary -->
-        <div class="border rounded-lg p-0 bg-white shadow-sm min-h-[400px]">
+        <div class="border p-0 bg-white shadow-sm min-h-[600px]">
           <div v-if="renderError" class="text-center text-red-500 py-8">
             <p>Error rendering component: {{ currentComponent.name }}</p>
             <p class="text-sm">{{ renderError }}</p>
@@ -123,7 +123,7 @@ import PageLayout from '@/components/custom/PageLayout.vue'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
 
-// Import components with fallbacks for problematic ones
+// Import all custom components
 import ActivationForm from '@/components/custom/ActivationForm.vue'
 import KontaktPersoner from '@/components/custom/KontaktPersoner.vue'
 import TabAllmant from '@/components/custom/TabAllmant.vue'
@@ -135,6 +135,9 @@ import TabFaktura from '@/components/custom/TabFaktura.vue'
 import ActionBar from '@/components/custom/ActionBar.vue'
 import CompanyResultsTable from '@/components/custom/CompanyResultsTable.vue'
 import DashboardCard from '@/components/custom/DashboardCard.vue'
+import TitleBreadcrumbs from '@/components/custom/TitleBreadcrumbs.vue'
+import TitleAnalytics from '@/components/custom/TitleAnalytics.vue'
+import StandardHeader from '@/components/custom/StandardHeader.vue'
 
 // Simple fallback component for problematic ones
 const FallbackComponent = {
@@ -190,6 +193,13 @@ const mockCustomer = {
   companyType: 'Kund' as const
 }
 
+// Mock stats for analytics components
+const mockStats = [
+  { value: 42, label: 'Total Items', color: 'text-blue-600' },
+  { value: 28, label: 'Active', color: 'text-green-600' },
+  { value: 14, label: 'Inactive', color: 'text-orange-600' }
+]
+
 // Component definitions with mock props
 const components = [
   { 
@@ -200,8 +210,37 @@ const components = [
     name: 'KontaktPersoner', 
     component: KontaktPersoner,
     props: {
-      contacts: [
-        { id: 1, name: 'John Doe', email: 'john@example.com', phone: '+46 123 456 789' }
+      contactPersons: [
+        { 
+          id: 1, 
+          name: 'Anna Andersson', 
+          title: 'IT-chef', 
+          email: 'anna.andersson@democompany.se', 
+          phone: '070-123 45 67',
+          department: 'IT',
+          isMainContact: true,
+          customerId: 1
+        },
+        { 
+          id: 2, 
+          name: 'Erik Svensson', 
+          title: 'Ekonomichef', 
+          email: 'erik.svensson@democompany.se', 
+          phone: '070-234 56 78',
+          department: 'Ekonomi',
+          isMainContact: false,
+          customerId: 1
+        },
+        { 
+          id: 3, 
+          name: 'Maria Larsson', 
+          title: 'Inköpschef', 
+          email: 'maria.larsson@democompany.se', 
+          phone: '070-345 67 89',
+          department: 'Inköp',
+          isMainContact: false,
+          customerId: 1
+        }
       ]
     }
   },
@@ -276,6 +315,34 @@ const components = [
       description: 'This is a demo dashboard card',
       value: '123',
       badge: { text: '+12%', variant: 'secondary' }
+    }
+  },
+  { 
+    name: 'TitleBreadcrumbs', 
+    component: TitleBreadcrumbs,
+    props: {
+      title: 'Demo Page Title',
+      breadcrumbs: 'Home / Demo / Page Title',
+      description: 'This is an optional description for the page'
+    }
+  },
+  { 
+    name: 'TitleAnalytics', 
+    component: TitleAnalytics,
+    props: {
+      showStats: true,
+      stats: mockStats
+    }
+  },
+  { 
+    name: 'StandardHeader', 
+    component: StandardHeader,
+    props: {
+      title: 'Complete Header Demo',
+      breadcrumbs: 'Home / Demo / Complete Header',
+      description: 'This demonstrates the full header with title, breadcrumbs, and analytics',
+      showStats: true,
+      stats: mockStats
     }
   }
 ]
