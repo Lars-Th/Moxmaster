@@ -34,7 +34,6 @@ const navigationItems = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { name: 'Kunder', path: '/customers', icon: Users },
   { name: 'Kontaktpersoner', path: '/contacts', icon: UserCheck },
-  { name: 'AI Prospector', path: '/prospector', icon: Bot },
   { name: 'Settings', path: '/settings', icon: Settings }
 ]
 
