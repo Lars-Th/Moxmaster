@@ -1,0 +1,363 @@
+<template>
+  <PageLayout
+    title="Custom Components"
+    breadcrumbs="Home / Custom Components"
+  >
+    <div class="p-6 space-y-6">
+      <!-- Header message -->
+      <div class="text-center">
+        <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+          Det här är alla våra färdiga komponenter utifrån shadcn
+        </h2>
+        
+        <!-- Component list for direct navigation -->
+        <details class="text-sm text-gray-600 mb-4">
+          <summary class="cursor-pointer hover:text-gray-800">Component List</summary>
+          <ul class="mt-2 grid grid-cols-2 md:grid-cols-3 gap-1 max-w-2xl mx-auto">
+            <li 
+              v-for="(comp, index) in components" 
+              :key="index" 
+              :class="{ 
+                'font-bold text-blue-600': index + 1 === currentPage,
+                'text-gray-600 hover:text-blue-600': index + 1 !== currentPage
+              }"
+              class="cursor-pointer p-1 rounded hover:bg-gray-100 transition-colors"
+              @click="goToPage(index + 1)"
+            >
+              {{ index + 1 }}. {{ comp.name }}
+            </li>
+          </ul>
+        </details>
+      </div>
+
+      <!-- Debug info -->
+      <div class="text-xs text-gray-400 text-center">
+        Debug: Total components: {{ totalComponents }}, Current page: {{ currentPage }}
+      </div>
+
+      <!-- Current component display -->
+      <div v-if="currentComponent" class="space-y-6">
+        <div class="text-center">
+          <h3 class="text-xl font-medium text-gray-700 mb-4">
+            {{ currentComponent.name }}
+          </h3>
+        </div>
+
+        <!-- Top separator -->
+        <Separator />
+
+        <!-- Component showcase with error boundary -->
+        <div class="border rounded-lg p-0 bg-white shadow-sm min-h-[400px]">
+          <div v-if="renderError" class="text-center text-red-500 py-8">
+            <p>Error rendering component: {{ currentComponent.name }}</p>
+            <p class="text-sm">{{ renderError }}</p>
+            <Button @click="clearError" class="mt-2">Try Again</Button>
+          </div>
+          <div v-else>
+            <component 
+              :is="currentComponent.component" 
+              v-bind="currentComponent.props || {}"
+              @vue:error="handleComponentError"
+            />
+          </div>
+        </div>
+
+        <!-- Bottom separator -->
+        <Separator />
+      </div>
+
+      <div v-else class="text-center text-gray-500 py-8">
+        <p>No component available for page {{ currentPage }}</p>
+      </div>
+
+      <!-- Simple pagination -->
+      <div class="flex items-center justify-between">
+        <div class="text-sm text-gray-500">
+          Component {{ currentPage }} of {{ totalComponents }}
+        </div>
+        
+        <div class="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            @click="previousPage"
+            :disabled="currentPage === 1"
+          >
+            <ChevronLeft class="h-4 w-4 mr-1" />
+            Previous
+          </Button>
+          
+          <div class="flex gap-1">
+            <Button
+              v-for="page in visiblePages"
+              :key="page"
+              variant="outline"
+              size="sm"
+              class="w-8 h-8"
+              :class="{ 'bg-primary text-primary-foreground': page === currentPage }"
+              @click="goToPage(page)"
+            >
+              {{ page }}
+            </Button>
+          </div>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            @click="nextPage"
+            :disabled="currentPage === totalComponents"
+          >
+            Next
+            <ChevronRight class="h-4 w-4 ml-1" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  </PageLayout>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, onErrorCaptured } from 'vue'
+import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
+import PageLayout from '@/components/custom/PageLayout.vue'
+import { Separator } from '@/components/ui/separator'
+import { Button } from '@/components/ui/button'
+
+// Import components with fallbacks for problematic ones
+import ActivationForm from '@/components/custom/ActivationForm.vue'
+import KontaktPersoner from '@/components/custom/KontaktPersoner.vue'
+import TabAllmant from '@/components/custom/TabAllmant.vue'
+import DataTable from '@/components/custom/DataTable.vue'
+import SearchFilterBar from '@/components/custom/SearchFilterBar.vue'
+import StatusNotification from '@/components/custom/StatusNotification.vue'
+import TabBesok from '@/components/custom/TabBesok.vue'
+import TabFaktura from '@/components/custom/TabFaktura.vue'
+import ActionBar from '@/components/custom/ActionBar.vue'
+import CompanyResultsTable from '@/components/custom/CompanyResultsTable.vue'
+import DashboardCard from '@/components/custom/DashboardCard.vue'
+
+// Simple fallback component for problematic ones
+const FallbackComponent = {
+  template: '<div class="p-4 text-center text-gray-500">Component could not be loaded</div>'
+}
+
+// Mock data for components that need props
+const mockTableColumns = [
+  { key: 'name', label: 'Name', sortable: true },
+  { key: 'email', label: 'Email', sortable: true },
+  { key: 'status', label: 'Status', type: 'badge', sortable: false }
+]
+
+const mockTableData = [
+  { id: 1, name: 'John Doe', email: 'john@example.com', status: 'Active' },
+  { id: 2, name: 'Jane Smith', email: 'jane@example.com', status: 'Inactive' }
+]
+
+const mockCompanyData = [
+  { 
+    id: 1, 
+    company: 'Tech Corp', 
+    contact: 'John CEO', 
+    email: 'john@techcorp.com',
+    phone: '+46 123 456 789',
+    status: 'Active'
+  }
+]
+
+// Mock Customer data for tab components
+const mockCustomer = {
+  id: 1,
+  name: 'John Doe',
+  city: 'Stockholm',
+  phone: '070-123 45 67',
+  companyName: 'Demo Company AB',
+  status: 'Aktiv' as const,
+  email: 'john@democompany.se',
+  customerNumber: 'KU-001',
+  organizationNumber: '556123-4567',
+  referenceNumber: 'REF-001',
+  streetAddress: 'Demogatan 1',
+  postalCode: '11122',
+  country: 'Sverige',
+  billingStreetAddress: 'Demogatan 1',
+  billingPostalCode: '11122',
+  billingCity: 'Stockholm',
+  billingCountry: 'Sverige',
+  switchboardNumber: '08-123 45 67',
+  companyEmail: 'info@democompany.se',
+  website: 'www.democompany.se',
+  companyNotes: 'Demo customer for component showcase',
+  companyType: 'Kund' as const
+}
+
+// Component definitions with mock props
+const components = [
+  { 
+    name: 'ActivationForm', 
+    component: ActivationForm
+  },
+  { 
+    name: 'KontaktPersoner', 
+    component: KontaktPersoner,
+    props: {
+      contacts: [
+        { id: 1, name: 'John Doe', email: 'john@example.com', phone: '+46 123 456 789' }
+      ]
+    }
+  },
+  { 
+    name: 'TabAllmant', 
+    component: TabAllmant,
+    props: {
+      editedCustomer: mockCustomer,
+      errors: {}
+    }
+  },
+  { 
+    name: 'DataTable', 
+    component: DataTable,
+    props: {
+      columns: mockTableColumns,
+      data: mockTableData,
+      searchable: true,
+      filterable: true
+    }
+  },
+  { 
+    name: 'SearchFilterBar', 
+    component: SearchFilterBar,
+    props: {
+      placeholder: 'Search components...'
+    }
+  },
+  { 
+    name: 'StatusNotification', 
+    component: StatusNotification,
+    props: {
+      message: 'This is a demo notification',
+      type: 'success'
+    }
+  },
+  { 
+    name: 'TabBesok', 
+    component: TabBesok,
+    props: {
+      editedCustomer: mockCustomer
+    }
+  },
+  { 
+    name: 'TabFaktura', 
+    component: TabFaktura,
+    props: {
+      editedCustomer: mockCustomer
+    }
+  },
+  { 
+    name: 'ActionBar', 
+    component: ActionBar,
+    props: {
+      title: 'Demo Action Bar',
+      actions: [
+        { label: 'Action 1', variant: 'default' },
+        { label: 'Action 2', variant: 'outline' }
+      ]
+    }
+  },
+  { 
+    name: 'CompanyResultsTable', 
+    component: CompanyResultsTable
+    // No props needed - uses prospector store internally
+  },
+  { 
+    name: 'DashboardCard', 
+    component: DashboardCard,
+    props: {
+      title: 'Demo Card',
+      description: 'This is a demo dashboard card',
+      value: '123',
+      badge: { text: '+12%', variant: 'secondary' }
+    }
+  }
+]
+
+// Reactive state
+const currentPage = ref(1)
+const renderError = ref('')
+const totalComponents = computed(() => components.length)
+
+// Current component to display
+const currentComponent = computed(() => {
+  const index = currentPage.value - 1
+  if (index >= 0 && index < components.length) {
+    return components[index]
+  }
+  return null
+})
+
+// Error handling
+const handleComponentError = (error: any) => {
+  console.error('Component render error:', error)
+  renderError.value = error.message || 'Unknown error'
+}
+
+const clearError = () => {
+  renderError.value = ''
+}
+
+onErrorCaptured((error) => {
+  console.error('Captured error:', error)
+  renderError.value = error.message || 'Unknown error'
+  return false
+})
+
+// Visible page numbers for pagination
+const visiblePages = computed(() => {
+  const total = totalComponents.value
+  const current = currentPage.value
+  const maxVisible = 5
+  
+  if (total <= maxVisible) {
+    return Array.from({ length: total }, (_, i) => i + 1)
+  }
+  
+  let start = Math.max(1, current - Math.floor(maxVisible / 2))
+  let end = Math.min(total, start + maxVisible - 1)
+  
+  if (end - start + 1 < maxVisible) {
+    start = Math.max(1, end - maxVisible + 1)
+  }
+  
+  return Array.from({ length: end - start + 1 }, (_, i) => start + i)
+})
+
+// Navigation functions
+const goToPage = (page: number) => {
+  renderError.value = '' // Clear any previous errors
+  if (page >= 1 && page <= totalComponents.value) {
+    console.log(`Navigating to page ${page}, component: ${components[page - 1]?.name}`)
+    currentPage.value = page
+  }
+}
+
+const previousPage = () => {
+  if (currentPage.value > 1) {
+    goToPage(currentPage.value - 1)
+  }
+}
+
+const nextPage = () => {
+  if (currentPage.value < totalComponents.value) {
+    goToPage(currentPage.value + 1)
+  }
+}
+
+onMounted(() => {
+  // Initialize with first component
+  console.log(`Mounted with ${totalComponents.value} components`)
+  currentPage.value = 1
+})
+</script>
+
+<style scoped>
+/* Custom styles if needed */
+</style> 

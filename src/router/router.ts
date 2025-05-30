@@ -6,7 +6,8 @@ import {
   Users, 
   Settings as SettingsIcon,
   UserCheck,
-  Search
+  Search,
+  Palette
 } from 'lucide-vue-next'
 import Dashboard from '@/views/Dashboard.vue'
 import Settings from '@/views/Settings.vue'
@@ -15,6 +16,7 @@ import Customers from '@/views/Customers.vue'
 import CustomerDetails from '@/views/CustomerDetails.vue'
 import Contacts from '@/views/Contacts.vue'
 import Prospector from '@/views/Prospector.vue'
+import CustomComponents from '@/views/CustomComponents.vue'
 
 // Single source of truth for routes and navigation
 const routeDefinitions = [
@@ -59,6 +61,12 @@ const routeDefinitions = [
     name: 'prospector',
     component: Prospector,
     navigation: { name: 'Prospector', icon: Search }
+  },
+  {
+    path: '/custom-components',
+    name: 'custom-components',
+    component: CustomComponents,
+    navigation: { name: 'Egna Komponenter', icon: Palette }
   },
   {
     path: '/settings',

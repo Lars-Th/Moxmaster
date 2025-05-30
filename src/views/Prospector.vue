@@ -6,18 +6,13 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ref, computed, onMounted } from 'vue'
 import { useProspectorService, type FilterCriteria, type Company, type LandingPageInfo } from '@/composables/useProspectorService'
-import { useNotifications } from '@/composables/useNotifications'
-import { useValidation } from '@/composables/useValidation'
 import { LayoutGrid, List, Search, Filter } from 'lucide-vue-next'
 import PageLayout from '@/components/custom/PageLayout.vue'
 import DataTable from '@/components/custom/DataTable.vue'
 import DashboardCard from '@/components/custom/DashboardCard.vue'
-import FormField from '@/components/ui/FormField.vue'
 
 // Use the API service instead of store
 const prospectorService = useProspectorService()
-const { success, error } = useNotifications()
-const { validateField, touchField, hasError, getError } = useValidation()
 
 const companies = ref<Company[]>([])
 const landingPageInfo = ref<LandingPageInfo | null>(null)
@@ -165,20 +160,6 @@ const addCompanyToProspects = (company: Company, event: Event) => {
 }
 
 // Get welcome text from landing page info or fallback
-const predefinedText = computed(() => {
-  return landingPageInfo.value?.welcomeText || 
-    `Welcome to our advanced company prospecting tool! 
-
-This powerful platform allows you to:
-• Filter companies by location, industry, and size
-• Search through thousands of business profiles
-• Export prospect lists for your sales team
-• Analyze market opportunities in your sector
-
-Our database is updated regularly to ensure you have access to the most current business information. Use the filters below to narrow down your search and find the perfect prospects for your business development efforts.
-
-Get started by setting your search criteria and clicking "Apply Filters" to discover new business opportunities!`
-})
 </script>
 
 <template>
