@@ -5,7 +5,6 @@ import Test from '@/views/Test.vue'
 import Customers from '@/views/Customers.vue'
 import CustomerDetails from '@/views/CustomerDetails.vue'
 import Contacts from '@/views/Contacts.vue'
-import ProspectorView from '@/views/ProspectorView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -39,11 +38,6 @@ const router = createRouter({
       path: '/contacts',
       name: 'contacts',
       component: Contacts
-    },
-    {
-      path: '/prospector',
-      name: 'prospector',
-      component: ProspectorView
     }
   ]
 })
