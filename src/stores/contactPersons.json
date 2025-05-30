@@ -1,0 +1,10 @@
+[
+  { "id": 1, "name": "Anna Andersson", "title": "VD", "email": "anna.andersson@techsolutions.se", "phone": "070-123 45 67", "department": "Ledning", "isMainContact": true, "customerId": 1 },
+  { "id": 2, "name": "Erik Svensson", "title": "IT-chef", "email": "erik.svensson@techsolutions.se", "phone": "070-234 56 78", "department": "IT", "isMainContact": false, "customerId": 1 },
+  { "id": 3, "name": "Maria Lindberg", "title": "Inköpschef", "email": "maria.lindberg@techsolutions.se", "phone": "070-345 67 89", "department": "Inköp", "isMainContact": false, "customerId": 1 },
+  { "id": 4, "name": "Johan Nilsson", "title": "Projektledare", "email": "johan.nilsson@techsolutions.se", "phone": "070-456 78 90", "department": "Projekt", "isMainContact": false, "customerId": 1 },
+  { "id": 5, "name": "Erik Svensson", "title": "VD", "email": "erik.svensson@digitalinnovations.se", "phone": "070-234 56 78", "department": "Ledning", "isMainContact": true, "customerId": 2 },
+  { "id": 6, "name": "Maria Lindberg", "title": "CTO", "email": "maria.lindberg@futuresystems.se", "phone": "070-345 67 89", "department": "Teknik", "isMainContact": true, "customerId": 3 },
+  { "id": 7, "name": "Johan Nilsson", "title": "VD", "email": "johan.nilsson@smarttech.se", "phone": "070-456 78 90", "department": "Ledning", "isMainContact": true, "customerId": 4 },
+  { "id": 8, "name": "Lisa Bergström", "title": "Försäljningschef", "email": "lisa.bergstrom@nordicsolutions.se", "phone": "070-567 89 01", "department": "Försäljning", "isMainContact": true, "customerId": 5 }
+] 

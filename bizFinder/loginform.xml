@@ -1,0 +1,32 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<templates xml:space='preserve'>
+
+    <t t-name='ucsmindbite_prospector.LoginForm'>
+        <t t-if='this.landingPageInformation.value'>
+            <div class='o_ucs_prospector_login_box'>
+                <div class='o_ucs_prospector_login_information'>
+                    <div id="ucs_prospector_information">
+                        <div class="o_ucs_prospector_login_information_img">
+                            <img class="o_ucs_prospector_login_bizmatch_logo" src="/ucsmindbite_prospector/static/description/icon.png" alt="BizMatch Logo"/>
+                        </div> 
+                    </div>            
+                </div>
+                <div class='o_ucs_prospector_login_registration'>
+                    <div id="ucs_prospector_registration"></div>
+                    <button t-on-click='login'>Aktivera BizFinder</button>
+                </div>
+            </div>
+        </t>
+        <t t-else=''>
+            <div class='o_ucs_prospector_login_logging_in'>
+                <h1 class='fa-spin spin'></h1>               
+            </div>
+        </t>
+
+        <style>
+            .o_menu_sections {
+                display: none !important;
+            }
+        </style>
+    </t>
+</templates>
