@@ -7,12 +7,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ref, computed, onMounted } from 'vue'
 import { useProspectorService, type FilterCriteria, type Company, type LandingPageInfo } from '@/composables/useProspectorService'
 import { LayoutGrid, List, Search, Filter } from 'lucide-vue-next'
-import PageLayout from '@/components/custom/PageLayout.vue'
+import StandardHeader from '@/components/custom/StandardHeader.vue'
 import DataTable from '@/components/custom/DataTable.vue'
 import DashboardCard from '@/components/custom/DashboardCard.vue'
 
 // Use the API service instead of store
 const prospectorService = useProspectorService()
+
+// Breadcrumbs
+const breadcrumbs = [
+  { label: 'Home', to: '/' },
+  { label: 'Prospector', isCurrentPage: true }
+]
 
 const companies = ref<Company[]>([])
 const landingPageInfo = ref<LandingPageInfo | null>(null)
@@ -74,20 +80,20 @@ const columns = [
   }
 ]
 
-// Statistik för PageLayout
+// Stats for StandardHeader
 const stats = computed(() => [
   {
-    value: totalCompanies.value,
-    label: 'Totalt företag'
+    label: 'Totalt företag',
+    value: totalCompanies.value.toString()
   },
   {
-    value: filteredCompanies.value.filter(c => c.status === 'Active').length,
     label: 'Aktiva',
+    value: filteredCompanies.value.filter(c => c.status === 'Active').length.toString(),
     color: 'text-green-600'
   },
   {
-    value: selectedCompaniesCount.value,
     label: 'Valda',
+    value: selectedCompaniesCount.value.toString(),
     color: 'text-blue-600'
   }
 ])
@@ -163,12 +169,15 @@ const addCompanyToProspects = (company: Company, event: Event) => {
 </script>
 
 <template>
-  <PageLayout
-    title="Prospector"
-    breadcrumbs="Home / Prospector"
-    :show-stats="true"
-    :stats="stats"
-  >
+  <div class="w-full">
+    <!-- Standard Header -->
+    <StandardHeader
+      title="Prospector"
+      :breadcrumbs="breadcrumbs"
+      :show-stats="true"
+      :stats="stats"
+    />
+
     <!-- Loading spinner -->
     <div v-if="prospectorService.isLoading.value" class="flex justify-center py-8">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -352,7 +361,7 @@ const addCompanyToProspects = (company: Company, event: Event) => {
         delete-button-variant="default"
       />
     </div>
-  </PageLayout>
+  </div>
 </template>
 
 <style scoped>

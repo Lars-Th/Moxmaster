@@ -8,18 +8,40 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useNotifications } from '@/composables/useNotifications'
 import { Clock, Plus, Search, Filter, Eye, Edit, Trash2 } from 'lucide-vue-next'
-import PageLayout from '@/components/custom/PageLayout.vue'
+import StandardHeader from '@/components/custom/StandardHeader.vue'
+import ActionBar from '@/components/custom/ActionBar.vue'
 import DataTable from '@/components/custom/DataTable.vue'
 
 const router = useRouter()
 const workOrderStore = useWorkOrderStore()
 const { success, error, confirm } = useNotifications()
 
+// Breadcrumbs
+const breadcrumbs = [
+  { label: 'Home', to: '/' },
+  { label: 'Arbetsorder', isCurrentPage: true }
+]
+
 // Filter states
 const searchQuery = ref('')
 const statusFilter = ref('all')
 const priorityFilter = ref('all')
 const assignedToFilter = ref('all')
+
+// Event handlers
+const handleCreateWorkOrder = () => {
+  router.push('/work-orders/new')
+}
+
+// Action buttons for ActionBar
+const actionButtons = [
+  {
+    label: 'Ny arbetsorder',
+    icon: Plus,
+    onClick: handleCreateWorkOrder,
+    class: 'text-xs h-8'
+  }
+]
 
 // DataTable columns för arbetsorder
 const workOrderColumns = [
@@ -172,35 +194,30 @@ const uniqueAssignees = computed(() => {
 // Statistik
 const stats = computed(() => [
   {
-    title: 'Totalt antal order',
+    label: 'Totalt antal order',
     value: workOrderStore.totalWorkOrders.toString(),
     change: '+12%',
     trend: 'up' as const
   },
   {
-    title: 'Pågående order',
+    label: 'Pågående order',
     value: workOrderStore.activeWorkOrders.length.toString(),
     change: '+5%',
     trend: 'up' as const
   },
   {
-    title: 'Avslutade denna månad',
+    label: 'Avslutade denna månad',
     value: workOrderStore.completedWorkOrders.length.toString(),
     change: '+8%',
     trend: 'up' as const
   },
   {
-    title: 'Försenade order',
+    label: 'Försenade order',
     value: '2',
     change: '-3%',
     trend: 'down' as const
   }
 ])
-
-// Event handlers
-const handleCreateWorkOrder = () => {
-  router.push('/work-orders/new')
-}
 
 const handleViewWorkOrder = (workOrder: any, event: Event) => {
   event.stopPropagation()
@@ -247,104 +264,117 @@ const clearFilters = () => {
 </script>
 
 <template>
-  <PageLayout
-    title="Arbetsorder"
-    breadcrumbs="Home / Arbetsorder"
-    :stats="stats"
-  >
-    <template #actions>
-      <div class="space-x-2">
-        <Button @click="handleCreateWorkOrder" class="text-xs h-8">
-          <Plus class="h-3 w-3 mr-1" />
-          Ny arbetsorder
-        </Button>
-      </div>
-    </template>
+  <div class="w-full">
+    <!-- Standard Header -->
+    <StandardHeader
+      title="Arbetsorder"
+      :breadcrumbs="breadcrumbs"
+      :show-stats="true"
+      :stats="stats"
+    />
 
-    <template #filters>
-      <div class="flex flex-wrap items-center gap-4 p-4 rounded-lg">
-        <!-- Sökfält -->
-        <div class="flex-1 min-w-[200px]">
-          <div class="relative">
-            <Search class="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
-            <Input
-              v-model="searchQuery"
-              placeholder="Sök arbetsorder..."
-              class="pl-8 h-8"
-              style="font-size: 12px; height: 32px;"
-            />
+    <!-- Custom Action Bar for Work Orders (with complex filters) -->
+    <div class="bg-background px-6 py-4 border-b">
+      <div class="flex items-center justify-between">
+        <!-- Action buttons on the left -->
+        <div class="flex items-center gap-2">
+          <Button 
+            v-for="button in actionButtons" 
+            :key="button.label"
+            :variant="button.variant || 'default'"
+            :class="button.class"
+            @click="button.onClick"
+          >
+            <component v-if="button.icon" :is="button.icon" class="h-3 w-3 mr-1" />
+            {{ button.label }}
+          </Button>
+        </div>
+        
+        <!-- Complex filters on the right -->
+        <div class="flex flex-wrap items-center gap-4 p-4 rounded-lg">
+          <!-- Sökfält -->
+          <div class="flex-1 min-w-[200px]">
+            <div class="relative">
+              <Search class="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
+              <Input
+                v-model="searchQuery"
+                placeholder="Sök arbetsorder..."
+                class="pl-8 h-8"
+                style="font-size: 12px; height: 32px;"
+              />
+            </div>
           </div>
-        </div>
 
-        <!-- Status filter -->
-        <div class="min-w-[120px]">
-          <Select v-model="statusFilter">
-            <SelectTrigger class="text-xs h-8" style="height: 32px;">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Alla statusar</SelectItem>
-              <SelectItem 
-                v-for="status in uniqueStatuses" 
-                :key="status" 
-                :value="status"
-              >
-                {{ status }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+          <!-- Status filter -->
+          <div class="min-w-[120px]">
+            <Select v-model="statusFilter">
+              <SelectTrigger class="text-xs h-8" style="height: 32px;">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alla statusar</SelectItem>
+                <SelectItem 
+                  v-for="status in uniqueStatuses" 
+                  :key="status" 
+                  :value="status"
+                >
+                  {{ status }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-        <!-- Prioritet filter -->
-        <div class="min-w-[120px]">
-          <Select v-model="priorityFilter">
-            <SelectTrigger class="text-xs h-8" style="height: 32px;">
-              <SelectValue placeholder="Prioritet" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Alla prioriteter</SelectItem>
-              <SelectItem 
-                v-for="priority in uniquePriorities" 
-                :key="priority" 
-                :value="priority"
-              >
-                {{ priority }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+          <!-- Prioritet filter -->
+          <div class="min-w-[120px]">
+            <Select v-model="priorityFilter">
+              <SelectTrigger class="text-xs h-8" style="height: 32px;">
+                <SelectValue placeholder="Prioritet" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alla prioriteter</SelectItem>
+                <SelectItem 
+                  v-for="priority in uniquePriorities" 
+                  :key="priority" 
+                  :value="priority"
+                >
+                  {{ priority }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-        <!-- Tilldelad filter -->
-        <div class="min-w-[140px]">
-          <Select v-model="assignedToFilter">
-            <SelectTrigger class="text-xs h-8" style="height: 32px;">
-              <SelectValue placeholder="Tilldelad" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Alla personer</SelectItem>
-              <SelectItem 
-                v-for="assignee in uniqueAssignees" 
-                :key="assignee" 
-                :value="assignee"
-              >
-                {{ assignee }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+          <!-- Tilldelad filter -->
+          <div class="min-w-[140px]">
+            <Select v-model="assignedToFilter">
+              <SelectTrigger class="text-xs h-8" style="height: 32px;">
+                <SelectValue placeholder="Tilldelad" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alla personer</SelectItem>
+                <SelectItem 
+                  v-for="assignee in uniqueAssignees" 
+                  :key="assignee" 
+                  :value="assignee"
+                >
+                  {{ assignee }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-        <!-- Rensa filter -->
-        <Button 
-          variant="outline" 
-          @click="clearFilters"
-          class="text-xs h-8"
-          style="height: 32px;"
-        >
-          <Filter class="h-3 w-3 mr-1" />
-          Rensa
-        </Button>
+          <!-- Rensa filter -->
+          <Button 
+            variant="outline" 
+            @click="clearFilters"
+            class="text-xs h-8"
+            style="height: 32px;"
+          >
+            <Filter class="h-3 w-3 mr-1" />
+            Rensa
+          </Button>
+        </div>
       </div>
-    </template>
+    </div>
 
     <!-- DataTable för arbetsorder -->
     <DataTable
@@ -401,5 +431,5 @@ const clearFilters = () => {
         </div>
       </template>
     </DataTable>
-  </PageLayout>
+  </div>
 </template> 

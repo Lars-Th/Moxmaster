@@ -7,11 +7,18 @@ import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Plus, Edit, Trash2 } from 'lucide-vue-next'
-import PageLayout from '@/components/custom/PageLayout.vue'
+import StandardHeader from '@/components/custom/StandardHeader.vue'
+import ActionBar from '@/components/custom/ActionBar.vue'
 import DataTable from '@/components/custom/DataTable.vue'
 
 const workOrderStore = useWorkOrderStore()
 const { success, error, confirm } = useNotifications()
+
+// Breadcrumbs
+const breadcrumbs = [
+  { label: 'Home', to: '/' },
+  { label: 'Maskiner', isCurrentPage: true }
+]
 
 // Modal state
 const isMachineModalOpen = ref(false)
@@ -19,6 +26,28 @@ const editingMachine = ref<string | null>(null)
 const machineForm = ref({
   name: ''
 })
+
+// Machine management functions
+const openMachineModal = (machine?: any) => {
+  if (machine) {
+    editingMachine.value = machine.name
+    machineForm.value.name = machine.name
+  } else {
+    editingMachine.value = null
+    machineForm.value.name = ''
+  }
+  isMachineModalOpen.value = true
+}
+
+// Action buttons for ActionBar
+const actionButtons = [
+  {
+    label: 'Lägg till maskin',
+    icon: Plus,
+    onClick: () => openMachineModal(),
+    class: 'text-xs h-8'
+  }
+]
 
 // Machine columns for DataTable
 const machineColumns = [
@@ -49,42 +78,30 @@ const transformedMachines = computed(() => {
 // Page stats
 const stats = computed(() => [
   {
-    title: 'Totalt maskiner',
+    label: 'Totalt maskiner',
     value: workOrderStore.machines.length.toString(),
     change: '',
     trend: 'neutral' as const
   },
   {
-    title: 'Aktiva maskiner',
+    label: 'Aktiva maskiner',
     value: workOrderStore.machines.length.toString(),
     change: '',
     trend: 'up' as const
   },
   {
-    title: 'Nya denna månad',
+    label: 'Nya denna månad',
     value: '2',
     change: '+100%',
     trend: 'up' as const
   },
   {
-    title: 'Underhåll planerat',
+    label: 'Underhåll planerat',
     value: '3',
     change: '',
     trend: 'neutral' as const
   }
 ])
-
-// Machine management
-const openMachineModal = (machine?: any) => {
-  if (machine) {
-    editingMachine.value = machine.name
-    machineForm.value.name = machine.name
-  } else {
-    editingMachine.value = null
-    machineForm.value.name = ''
-  }
-  isMachineModalOpen.value = true
-}
 
 const saveMachine = () => {
   if (!machineForm.value.name.trim()) {
@@ -134,50 +151,16 @@ const deleteMachine = async (machine: any) => {
 </script>
 
 <template>
-  <PageLayout
-    title="Maskiner"
-    breadcrumbs="Home / Maskiner"
-    :stats="stats"
-  >
-    <template #actions>
-      <div class="space-x-2">
-        <Dialog v-model:open="isMachineModalOpen">
-          <DialogTrigger asChild>
-            <Button @click="openMachineModal()" class="text-xs h-8">
-              <Plus class="h-3 w-3 mr-1" />
-              Lägg till maskin
-            </Button>
-          </DialogTrigger>
-          <DialogContent class="max-w-md">
-            <DialogHeader>
-              <DialogTitle>{{ editingMachine ? 'Redigera maskin' : 'Ny maskin' }}</DialogTitle>
-            </DialogHeader>
-            
-            <div class="space-y-4">
-              <div class="space-y-2">
-                <Label for="machineName">Maskinnamn *</Label>
-                <Input
-                  id="machineName"
-                  v-model="machineForm.name"
-                  placeholder="T.ex. Grävmaskin CAT 320"
-                  class="text-xs"
-                />
-              </div>
+  <div class="w-full">
+    <!-- Standard Header -->
+    <StandardHeader
+      title="Maskiner"
+      :breadcrumbs="breadcrumbs"
+      :show-stats="true"
+      :stats="stats"
+    />
 
-              <div class="flex justify-end space-x-2 pt-4">
-                <Button variant="outline" @click="isMachineModalOpen = false" class="text-xs">
-                  Avbryt
-                </Button>
-                <Button @click="saveMachine" class="text-xs">
-                  {{ editingMachine ? 'Uppdatera' : 'Lägg till' }}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-    </template>
-
+    <!-- Search and Filter Bar with Actions -->
     <DataTable
       :data="transformedMachines"
       :columns="machineColumns"
@@ -187,6 +170,18 @@ const deleteMachine = async (machine: any) => {
       :on-delete="deleteMachine"
       delete-confirm-message="Är du säker på att du vill ta bort denna maskin?"
     >
+      <template #filters="{ searchQuery, statusFilter, filterOptions, updateSearchQuery, updateStatusFilter }">
+        <ActionBar
+          :action-buttons="actionButtons"
+          :search-query="searchQuery"
+          :status-filter="statusFilter"
+          search-placeholder="Sök maskiner..."
+          :filter-options="filterOptions"
+          @update:search-query="updateSearchQuery"
+          @update:status-filter="updateStatusFilter"
+        />
+      </template>
+
       <!-- Custom actions -->
       <template #actions="{ row }">
         <div class="flex items-center space-x-1">
@@ -209,5 +204,35 @@ const deleteMachine = async (machine: any) => {
         </div>
       </template>
     </DataTable>
-  </PageLayout>
+
+    <!-- Machine Modal -->
+    <Dialog v-model:open="isMachineModalOpen">
+      <DialogContent class="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{{ editingMachine ? 'Redigera maskin' : 'Ny maskin' }}</DialogTitle>
+        </DialogHeader>
+        
+        <div class="space-y-4">
+          <div class="space-y-2">
+            <Label for="machineName">Maskinnamn *</Label>
+            <Input
+              id="machineName"
+              v-model="machineForm.name"
+              placeholder="T.ex. Grävmaskin CAT 320"
+              class="text-xs"
+            />
+          </div>
+
+          <div class="flex justify-end space-x-2 pt-4">
+            <Button variant="outline" @click="isMachineModalOpen = false" class="text-xs">
+              Avbryt
+            </Button>
+            <Button @click="saveMachine" class="text-xs">
+              {{ editingMachine ? 'Uppdatera' : 'Lägg till' }}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  </div>
 </template> 

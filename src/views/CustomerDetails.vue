@@ -7,7 +7,8 @@ import { useToast } from '@/composables/useToast'
 import { useNotifications } from '@/composables/useNotifications'
 import { useValidation } from '@/composables/useValidation'
 import { Building2, MapPin, Receipt } from 'lucide-vue-next'
-import PageLayout from '@/components/custom/PageLayout.vue'
+import StandardHeader from '@/components/custom/StandardHeader.vue'
+import ActionBar from '@/components/custom/ActionBar.vue'
 import StatusNotification from '@/components/custom/StatusNotification.vue'
 import { useCustomerStore, type Customer } from '@/stores/customerStore'
 
@@ -42,6 +43,29 @@ const breadcrumbs = computed((): BreadcrumbItem[] => [
   { label: 'Home', to: '/' },
   { label: 'Kunder', to: '/customers' },
   { label: customer.value?.companyName || 'Kunddetaljer', isCurrentPage: true }
+])
+
+// Action buttons for ActionBar
+const actionButtons = computed(() => [
+  {
+    label: 'Spara nu',
+    onClick: saveChanges,
+    disabled: !hasChanges.value,
+    class: 'text-xs h-8'
+  },
+  {
+    label: 'Återställ',
+    onClick: resetChanges,
+    disabled: !hasChanges.value,
+    variant: 'outline' as const,
+    class: 'text-xs h-8'
+  },
+  {
+    label: 'Tillbaka till kundlista',
+    onClick: goBack,
+    variant: 'outline' as const,
+    class: 'text-xs h-8'
+  }
 ])
 
 const editedCustomer = ref<Customer | null>(customer.value ? { ...customer.value } : null)
@@ -244,28 +268,15 @@ const handleEditContact = (person: any) => {
 </script>
 
 <template>
-  <PageLayout
-    title="Kunder"
-    :breadcrumbs="breadcrumbs"
-    :show-stats="false"
-  >
-    <template #actions>
-      <div class="space-x-2">
-        <Button variant="default" @click="saveChanges" :disabled="!hasChanges" class="text-xs h-8">
-          Spara nu
-        </Button>
-        <Button variant="outline" @click="resetChanges" :disabled="!hasChanges" class="text-xs h-8">
-          Återställ
-        </Button>
-        <Button variant="outline" @click="goBack" class="text-xs h-8">
-          Tillbaka till kundlista
-        </Button>
-      </div>
-    </template>
+  <div class="w-full">
+    <!-- Standard Header -->
+    <StandardHeader
+      title="Kunder"
+      :breadcrumbs="breadcrumbs"
+    />
 
-    <template #filters>
-      <!-- Inga filter för kunddetaljer -->
-    </template>
+    <!-- Action Bar with customer-specific actions -->
+    <ActionBar :action-buttons="actionButtons" />
 
     <!-- Varningsbox för osparade ändringar -->
     <StatusNotification
@@ -346,5 +357,5 @@ const handleEditContact = (person: any) => {
         </TooltipProvider>
       </div>
     </div>
-  </PageLayout>
+  </div>
 </template> 

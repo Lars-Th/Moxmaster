@@ -7,10 +7,10 @@ import {
   Settings as SettingsIcon,
   UserCheck,
   Search,
-  Clock,
-  Truck,
+  Palette,
   Wrench,
-  Palette
+  Hammer,
+  FileText
 } from 'lucide-vue-next'
 import Dashboard from '@/views/Dashboard.vue'
 import Settings from '@/views/Settings.vue'
@@ -18,32 +18,31 @@ import Test from '@/views/Test.vue'
 import Customers from '@/views/Customers.vue'
 import CustomerDetails from '@/views/CustomerDetails.vue'
 import Contacts from '@/views/Contacts.vue'
-import WorkOrders from '@/views/WorkOrders.vue'
-import WorkOrderDetails from '@/views/WorkOrderDetails.vue'
-import Machines from '@/views/Machines.vue'
-import Tools from '@/views/Tools.vue'
 import Prospector from '@/views/Prospector.vue'
 import CustomComponents from '@/views/CustomComponents.vue'
+import Machines from '@/views/Machines.vue'
+import Tools from '@/views/Tools.vue'
+import WorkOrders from '@/views/WorkOrders.vue'
 
 // Single source of truth for routes and navigation
 const routeDefinitions = [
   {
     path: '/',
+    name: 'custom-components',
+    component: CustomComponents,
+    navigation: { name: 'Egna Komponenter', icon: Palette }
+  },
+  {
+    path: '/dashboard',
     name: 'dashboard',
     component: Dashboard,
-    navigation: { name: 'Home', icon: Home }
+    navigation: { name: 'Dashboard', icon: LayoutDashboard }
   },
   {
     path: '/test',
     name: 'test',
     component: Test,
     navigation: { name: 'Test', icon: TestTube }
-  },
-  {
-    path: '/dashboard',
-    name: 'dashboard-alt',
-    component: Dashboard,
-    navigation: { name: 'Dashboard', icon: LayoutDashboard }
   },
   {
     path: '/customers',
@@ -64,46 +63,28 @@ const routeDefinitions = [
     navigation: { name: 'Kontaktpersoner', icon: UserCheck }
   },
   {
-    path: '/work-orders',
-    name: 'work-orders',
-    component: WorkOrders,
-    navigation: { name: 'Arbetsorder', icon: Clock }
-  },
-  {
-    path: '/work-orders/new',
-    name: 'work-order-new',
-    component: WorkOrderDetails
-    // No navigation property means it won't appear in nav
-  },
-  {
-    path: '/work-orders/:id',
-    name: 'work-order-details',
-    component: WorkOrderDetails
-    // No navigation property means it won't appear in nav
-  },
-  {
     path: '/machines',
     name: 'machines',
     component: Machines,
-    navigation: { name: 'Maskiner', icon: Truck }
+    navigation: { name: 'Maskiner', icon: Wrench }
   },
   {
     path: '/tools',
     name: 'tools',
     component: Tools,
-    navigation: { name: 'Redskap', icon: Wrench }
+    navigation: { name: 'Verktyg', icon: Hammer }
+  },
+  {
+    path: '/work-orders',
+    name: 'work-orders',
+    component: WorkOrders,
+    navigation: { name: 'Arbetsorder', icon: FileText }
   },
   {
     path: '/prospector',
     name: 'prospector',
     component: Prospector,
     navigation: { name: 'Prospector', icon: Search }
-  },
-  {
-    path: '/custom-components',
-    name: 'custom-components',
-    component: CustomComponents,
-    navigation: { name: 'Egna Komponenter', icon: Palette }
   },
   {
     path: '/settings',

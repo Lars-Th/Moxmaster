@@ -5,8 +5,14 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { ref } from 'vue'
-import PageLayout from '@/components/custom/PageLayout.vue'
+import StandardHeader from '@/components/custom/StandardHeader.vue'
 import DashboardCard from '@/components/custom/DashboardCard.vue'
+
+// Breadcrumbs
+const breadcrumbs = [
+  { label: 'Home', to: '/' },
+  { label: 'Inställningar', isCurrentPage: true }
+]
 
 const notifications = ref(true)
 const darkMode = ref(false)
@@ -14,17 +20,13 @@ const autoSave = ref(true)
 </script>
 
 <template>
-  <PageLayout
-    title="Inställningar"
-    breadcrumbs="Home / Inställningar"
-  >
-    <template #actions>
-      <!-- Inga åtgärder för inställningar -->
-    </template>
+  <div class="w-full">
+    <!-- Standard Header -->
+    <StandardHeader
+      title="Inställningar"
+      :breadcrumbs="breadcrumbs"
+    />
 
-    <template #filters>
-      <!-- Inga filter för inställningar -->
-    </template>
     <div class="p-4 space-y-4">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <!-- Profile Settings -->
@@ -100,7 +102,7 @@ const autoSave = ref(true)
         </div>
       </DashboardCard>
     </div>
-  </PageLayout>
+  </div>
 </template>
 
 <style scoped>

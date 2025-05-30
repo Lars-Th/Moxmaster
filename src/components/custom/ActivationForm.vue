@@ -55,9 +55,9 @@ const handleKeyPress = (event: KeyboardEvent) => {
         <Key class="h-8 w-8 text-blue-600 dark:text-blue-400" />
       </div>
       <div>
-        <CardTitle class="text-2xl font-bold">Activate AI Prospector</CardTitle>
+        <CardTitle class="text-2xl font-bold">Welcome to Mindbite</CardTitle>
         <CardDescription class="text-base mt-2">
-          Enter your activation code to access the AI-powered company search
+          Enter your activation code to access the the best service you can dream of
         </CardDescription>
       </div>
     </CardHeader>

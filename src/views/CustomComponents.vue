@@ -1,8 +1,14 @@
 <template>
-  <PageLayout
-    title="Custom Components"
-    breadcrumbs="Home / Custom Components"
-  >
+  <div class="w-full">
+    <!-- Standard Header -->
+    <StandardHeader
+      title="Custom Components"
+      :breadcrumbs="[
+        { label: 'Home', to: '/' },
+        { label: 'Custom Components', isCurrentPage: true }
+      ]"
+    />
+
     <div class="p-6 space-y-6">
       <!-- Header message -->
       <div class="text-center">
@@ -43,11 +49,8 @@
           </h3>
         </div>
 
-        <!-- Top separator -->
-        <Separator />
-
         <!-- Component showcase with error boundary -->
-        <div class="border p-0 bg-white shadow-sm min-h-[600px]">
+        <div class="border p-0 bg-white shadow-sm min-h-[10px]">
           <div v-if="renderError" class="text-center text-red-500 py-8">
             <p>Error rendering component: {{ currentComponent.name }}</p>
             <p class="text-sm">{{ renderError }}</p>
@@ -63,9 +66,6 @@
             </TooltipProvider>
           </div>
         </div>
-
-        <!-- Bottom separator -->
-        <Separator />
       </div>
 
       <div v-else class="text-center text-gray-500 py-8">
@@ -115,13 +115,13 @@
         </div>
       </div>
     </div>
-  </PageLayout>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onErrorCaptured } from 'vue'
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
-import PageLayout from '@/components/custom/PageLayout.vue'
+import StandardHeader from '@/components/custom/StandardHeader.vue'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -131,7 +131,7 @@ import ActivationForm from '@/components/custom/ActivationForm.vue'
 import ContactPersonsTable from '@/components/custom/ContactPersonsTable.vue'
 import TabAllmant from '@/components/custom/TabAllmant.vue'
 import DataTable from '@/components/custom/DataTable.vue'
-import SearchFilterBar from '@/components/custom/SearchFilterBar.vue'
+import ActionBar from '@/components/custom/ActionBar.vue'
 import StatusNotification from '@/components/custom/StatusNotification.vue'
 import TabBesok from '@/components/custom/TabBesok.vue'
 import TabFaktura from '@/components/custom/TabFaktura.vue'
@@ -140,8 +140,8 @@ import CompanyResultsTable from '@/components/custom/CompanyResultsTable.vue'
 import DashboardCard from '@/components/custom/DashboardCard.vue'
 import TitleBreadcrumbs from '@/components/custom/TitleBreadcrumbs.vue'
 import TitleAnalytics from '@/components/custom/TitleAnalytics.vue'
-import StandardHeader from '@/components/custom/StandardHeader.vue'
 import AddContactDialog from '@/components/custom/AddContactDialog.vue'
+import KontaktPersoner from '@/components/custom/KontaktPersoner.vue'
 import Toast from '@/components/custom/Toast.vue'
 import ToastContainer from '@/components/custom/ToastContainer.vue'
 
@@ -283,10 +283,24 @@ const components = [
     }
   },
   { 
-    name: 'SearchFilterBar', 
-    component: SearchFilterBar,
+    name: 'ActionBar', 
+    component: ActionBar,
     props: {
-      placeholder: 'Search components...'
+      searchQuery: '',
+      statusFilter: '',
+      searchPlaceholder: 'Search components...',
+      filterOptions: [
+        { value: 'active', label: 'Active' },
+        { value: 'inactive', label: 'Inactive' }
+      ],
+      actionButtons: [
+        {
+          label: 'Add Component',
+          icon: 'Plus',
+          onClick: () => console.log('Add component clicked'),
+          class: 'text-xs h-8'
+        }
+      ]
     }
   },
   { 
@@ -315,10 +329,20 @@ const components = [
     name: 'SearchAndFilter', 
     component: SearchAndFilter,
     props: {
-      title: 'Demo Action Bar',
-      actions: [
-        { label: 'Action 1', variant: 'default' },
-        { label: 'Action 2', variant: 'outline' }
+      actionButtons: [
+        { 
+          label: 'Add New Item', 
+          icon: 'Plus', 
+          onClick: () => console.log('Add clicked'),
+          class: 'text-xs h-8'
+        }
+      ],
+      searchQuery: '',
+      statusFilter: '',
+      searchPlaceholder: 'Search for items...',
+      filterOptions: [
+        { value: 'active', label: 'Active' },
+        { value: 'inactive', label: 'Inactive' }
       ]
     }
   },
@@ -389,6 +413,44 @@ const components = [
     component: ToastContainer,
     props: {
       // ToastContainer gets its data from the useToast composable
+    }
+  },
+  { 
+    name: 'KontaktPersoner', 
+    component: KontaktPersoner,
+    props: {
+      contactPersons: [
+        { 
+          id: 1, 
+          name: 'Anna Andersson', 
+          title: 'IT-chef', 
+          email: 'anna.andersson@democompany.se', 
+          phone: '070-123 45 67',
+          department: 'IT',
+          isMainContact: true,
+          customerId: 1
+        },
+        { 
+          id: 2, 
+          name: 'Erik Svensson', 
+          title: 'Ekonomichef', 
+          email: 'erik.svensson@democompany.se', 
+          phone: '070-234 56 78',
+          department: 'Ekonomi',
+          isMainContact: false,
+          customerId: 1
+        },
+        { 
+          id: 3, 
+          name: 'Maria Larsson', 
+          title: 'Inköpschef', 
+          email: 'maria.larsson@democompany.se', 
+          phone: '070-345 67 89',
+          department: 'Inköp',
+          isMainContact: false,
+          customerId: 1
+        }
+      ]
     }
   }
 ]

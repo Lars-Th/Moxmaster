@@ -4,12 +4,18 @@ import { useRouter } from 'vue-router'
 import { useContactStore } from '@/stores/contactStore'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-vue-next'
-import PageLayout from '@/components/custom/PageLayout.vue'
+import StandardHeader from '@/components/custom/StandardHeader.vue'
+import ActionBar from '@/components/custom/ActionBar.vue'
 import DataTable from '@/components/custom/DataTable.vue'
-import SearchAndFilter from '@/components/custom/SearchAndFilter.vue'
 
 const router = useRouter()
 const contactStore = useContactStore()
+
+// Functional breadcrumbs
+const breadcrumbs = [
+  { label: 'Home', to: '/' },
+  { label: `Kontaktpersoner (${contactStore.totalContacts})`, isCurrentPage: true }
+]
 
 // Column configuration for the data table
 const columns = [
@@ -50,6 +56,16 @@ const filterOptions = [
   { value: 'false', label: 'Kontakter' }
 ]
 
+// Action buttons configuration
+const actionButtons = [
+  {
+    label: 'Lägg till ny kontakt',
+    icon: Plus,
+    onClick: addNewContact,
+    class: 'text-xs h-8'
+  }
+]
+
 // Transform contacts data to match filter expectations
 const transformedContacts = computed(() => {
   return contactStore.contacts.map(contact => ({
@@ -61,31 +77,33 @@ const transformedContacts = computed(() => {
   }))
 })
 
-// Statistik för PageLayout
+// Stats for StandardHeader
 const stats = computed(() => [
   {
-    title: 'Totalt kontakter',
+    label: 'Totalt kontakter',
     value: contactStore.totalContacts.toString(),
     change: '+8%',
     trend: 'up' as const
   },
   {
-    title: 'Huvudkontakter',
+    label: 'Huvudkontakter',
     value: contactStore.mainContacts.length.toString(),
     change: '+3%',
-    trend: 'up' as const
+    trend: 'up' as const,
+    color: 'text-green-600'
   },
   {
-    title: 'Nya denna månad',
+    label: 'Nya denna månad',
     value: '12',
     change: '+20%',
     trend: 'up' as const
   },
   {
-    title: 'Aktiva företag',
+    label: 'Aktiva företag',
     value: '45',
     change: '+5%',
-    trend: 'up' as const
+    trend: 'up' as const,
+    color: 'text-blue-600'
   }
 ])
 
@@ -108,20 +126,16 @@ const deleteContact = (contact: any, event: Event) => {
 </script>
 
 <template>
-  <PageLayout
-    title="Kontaktpersoner"
-    :breadcrumbs="`Home / Kontaktpersoner (${contactStore.totalContacts})`"
-    :stats="stats"
-  >
-    <template #actions>
-      <div class="space-x-2">
-        <Button @click="addNewContact" class="text-xs h-8">
-          <Plus class="h-3 w-3 mr-1" />
-          Lägg till ny kontakt
-        </Button>
-      </div>
-    </template>
+  <div class="w-full">
+    <!-- Standard Header -->
+    <StandardHeader
+      title="Kontaktpersoner"
+      :breadcrumbs="breadcrumbs"
+      :show-stats="true"
+      :stats="stats"
+    />
 
+    <!-- Search and Filter Bar -->
     <DataTable
       :data="transformedContacts"
       :columns="columns"
@@ -134,7 +148,7 @@ const deleteContact = (contact: any, event: Event) => {
       delete-confirm-message="Är du säker på att du vill radera denna kontakt?"
     >
       <template #filters="{ searchQuery, statusFilter, filterOptions, updateSearchQuery, updateStatusFilter }">
-        <SearchAndFilter
+        <ActionBar
           :action-buttons="actionButtons"
           :search-query="searchQuery"
           :status-filter="statusFilter"
@@ -145,5 +159,5 @@ const deleteContact = (contact: any, event: Event) => {
         />
       </template>
     </DataTable>
-  </PageLayout>
+  </div>
 </template> 

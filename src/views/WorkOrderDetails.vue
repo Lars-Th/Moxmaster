@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Save, ArrowLeft, Plus, Edit, Trash2, Check, X } from 'lucide-vue-next'
-import PageLayout from '@/components/custom/PageLayout.vue'
+import StandardHeader from '@/components/custom/StandardHeader.vue'
+import ActionBar from '@/components/custom/ActionBar.vue'
 import DataTable from '@/components/custom/DataTable.vue'
 
 const route = useRoute()
@@ -27,6 +28,35 @@ const workOrderId = computed(() => {
 })
 
 const isNewWorkOrder = computed(() => workOrderId.value === null)
+
+// Breadcrumbs
+const breadcrumbs = computed(() => [
+  { label: 'Home', to: '/' },
+  { label: 'Arbetsorder', to: '/work-orders' },
+  { 
+    label: isNewWorkOrder.value 
+      ? 'Ny arbetsorder' 
+      : formData.value.orderNumber || 'Arbetsorderdetaljer', 
+    isCurrentPage: true 
+  }
+])
+
+// Action buttons for ActionBar
+const actionButtons = computed(() => [
+  {
+    label: 'Spara arbetsorder',
+    icon: Save,
+    onClick: saveWorkOrder,
+    class: 'text-xs h-8'
+  },
+  {
+    label: 'Tillbaka',
+    icon: ArrowLeft,
+    onClick: () => router.push('/work-orders'),
+    variant: 'outline' as const,
+    class: 'text-xs h-8'
+  }
+])
 
 // Form data
 const formData = ref<Partial<WorkOrder>>({
@@ -283,33 +313,28 @@ const toggleTaskCompletion = (task: WorkOrderTask) => {
   }
 }
 
-// Navigation
-const goBack = () => {
-  router.push('/work-orders')
-}
-
 // Page stats
 const stats = computed(() => [
   {
-    title: 'Totala uppgifter',
+    label: 'Totalt uppgifter',
     value: (formData.value.tasks?.length || 0).toString(),
     change: '',
     trend: 'neutral' as const
   },
   {
-    title: 'Klara uppgifter',
+    label: 'Klara uppgifter',
     value: (formData.value.tasks?.filter(t => t.completed).length || 0).toString(),
     change: '',
     trend: 'up' as const
   },
   {
-    title: 'Beräknade timmar',
+    label: 'Beräknade timmar',
     value: formData.value.estimatedHours?.toString() || '0',
     change: '',
     trend: 'neutral' as const
   },
   {
-    title: 'Faktiska timmar',
+    label: 'Faktiska timmar',
     value: formData.value.actualHours?.toString() || '0',
     change: '',
     trend: 'neutral' as const
@@ -318,25 +343,19 @@ const stats = computed(() => [
 </script>
 
 <template>
-  <PageLayout
-    :title="isNewWorkOrder ? 'Ny arbetsorder' : `Arbetsorder ${formData.orderNumber}`"
-    :breadcrumbs="`Home / Arbetsorder / ${isNewWorkOrder ? 'Ny' : formData.orderNumber}`"
-    :stats="stats"
-  >
-    <template #actions>
-      <div class="space-x-2">
-        <Button variant="outline" @click="goBack" class="text-xs h-8">
-          <ArrowLeft class="h-3 w-3 mr-1" />
-          Tillbaka
-        </Button>
-        <Button @click="saveWorkOrder" class="text-xs h-8">
-          <Save class="h-3 w-3 mr-1" />
-          Spara
-        </Button>
-      </div>
-    </template>
+  <div class="w-full">
+    <!-- Standard Header -->
+    <StandardHeader
+      :title="isNewWorkOrder ? 'Ny arbetsorder' : `Arbetsorder ${formData.orderNumber}`"
+      :breadcrumbs="breadcrumbs"
+      :show-stats="true"
+      :stats="stats"
+    />
 
-    <div class="space-y-6">
+    <!-- Action Bar -->
+    <ActionBar :action-buttons="actionButtons" />
+
+    <div class="space-y-6 px-6 mt-6">
       <!-- Grundläggande information - Centrerad box -->
       <div class="flex justify-center">
         <div class="w-full max-w-6xl bg-white p-6 rounded-lg border">
@@ -666,5 +685,5 @@ const stats = computed(() => [
         </DataTable>
       </div>
     </div>
-  </PageLayout>
+  </div>
 </template> 

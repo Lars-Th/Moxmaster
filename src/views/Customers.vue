@@ -4,10 +4,9 @@ import { useRouter } from 'vue-router'
 import { useCustomerStore } from '@/stores/customerStore'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-vue-next'
-import TitleBreadcrumbs from '@/components/custom/TitleBreadcrumbs.vue'
-import TitleAnalytics from '@/components/custom/TitleAnalytics.vue'
+import StandardHeader from '@/components/custom/StandardHeader.vue'
+import ActionBar from '@/components/custom/ActionBar.vue'
 import DataTable from '@/components/custom/DataTable.vue'
-import SearchAndFilter from '@/components/custom/SearchAndFilter.vue'
 
 interface BreadcrumbItem {
   label: string
@@ -68,28 +67,40 @@ const filterOptions = [
   { value: 'Inaktiv', label: 'Inaktiv' }
 ]
 
-// Statistik för PageLayout
+// Action buttons configuration
+const actionButtons = [
+  {
+    label: 'Lägg till ny kund',
+    icon: Plus,
+    onClick: addNewCustomer,
+    class: 'text-xs h-8'
+  }
+]
+
+// Stats for StandardHeader
 const stats = computed(() => [
   {
-    title: 'Totalt kunder',
+    label: 'Totalt kunder',
     value: customerStore.totalCustomers.toString(),
     change: '+12%',
     trend: 'up' as const
   },
   {
-    title: 'Aktiva kunder',
+    label: 'Aktiva kunder',
     value: customerStore.activeCustomers.length.toString(),
     change: '+5%',
-    trend: 'up' as const
+    trend: 'up' as const,
+    color: 'text-green-600'
   },
   {
-    title: 'Inaktiva kunder',
+    label: 'Inaktiva kunder',
     value: customerStore.inactiveCustomers.length.toString(),
     change: '-2%',
-    trend: 'down' as const
+    trend: 'down' as const,
+    color: 'text-orange-600'
   },
   {
-    title: 'Nya denna månad',
+    label: 'Nya denna månad',
     value: '8',
     change: '+15%',
     trend: 'up' as const
@@ -116,62 +127,38 @@ const deleteCustomer = (customer: any, event: Event) => {
 
 <template>
   <div class="w-full">
-    <!-- Header using individual components -->
-    <div class="bg-background px-6 py-4">
-      <div class="flex flex-col gap-4">
-        <!-- Title and breadcrumbs -->
-        <TitleBreadcrumbs 
-          title="Kunder" 
-          :breadcrumbs="breadcrumbs"
-          description="Manage and view all customer information"
-        />
-        
-        <!-- Analytics -->
-        <TitleAnalytics 
-          :show-stats="true" 
-          :stats="stats" 
-        />
-        
-        <!-- Actions and filters row -->
-        <div class="flex items-center justify-between h-10">
-          <!-- Action buttons on the left -->
-          <div class="flex items-center gap-2">
-            <!-- Could add action buttons here -->
-          </div>
-          
-          <!-- Search and filters on the right -->
-          <div class="flex items-center gap-2">
-            <!-- Filters will be handled by DataTable -->
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- Standard Header -->
+    <StandardHeader
+      title="Kunder"
+      :breadcrumbs="breadcrumbs"
+      description="Manage and view all customer information"
+      :show-stats="true"
+      :stats="stats"
+    />
 
-    <!-- Main content -->
-    <div>
-      <DataTable
-        :data="customerStore.customers"
-        :columns="columns"
-        :search-fields="['name', 'city', 'companyName']"
-        filter-field="status"
-        :filter-options="filterOptions"
-        :on-row-click="viewCustomerDetails"
-        :on-send-email="sendEmail"
-        :on-delete="deleteCustomer"
-        delete-confirm-message="Är du säker på att du vill radera denna kund?"
-      >
-        <template #filters="{ searchQuery, statusFilter, filterOptions, updateSearchQuery, updateStatusFilter }">
-          <SearchAndFilter
-            :action-buttons="actionButtons"
-            :search-query="searchQuery"
-            :status-filter="statusFilter"
-            search-placeholder="Sök på namn, ort eller företag..."
-            :filter-options="filterOptions"
-            @update:search-query="updateSearchQuery"
-            @update:status-filter="updateStatusFilter"
-          />
-        </template>
-      </DataTable>
-    </div>
+    <!-- Data Table with Search and Filter Bar -->
+    <DataTable
+      :data="customerStore.customers"
+      :columns="columns"
+      :search-fields="['name', 'city', 'companyName']"
+      filter-field="status"
+      :filter-options="filterOptions"
+      :on-row-click="viewCustomerDetails"
+      :on-send-email="sendEmail"
+      :on-delete="deleteCustomer"
+      delete-confirm-message="Är du säker på att du vill radera denna kund?"
+    >
+      <template #filters="{ searchQuery, statusFilter, filterOptions, updateSearchQuery, updateStatusFilter }">
+        <ActionBar
+          :action-buttons="actionButtons"
+          :search-query="searchQuery"
+          :status-filter="statusFilter"
+          search-placeholder="Sök på namn, ort eller företag..."
+          :filter-options="filterOptions"
+          @update:search-query="updateSearchQuery"
+          @update:status-filter="updateStatusFilter"
+        />
+      </template>
+    </DataTable>
   </div>
 </template> 
