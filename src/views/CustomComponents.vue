@@ -54,11 +54,13 @@
             <Button @click="clearError" class="mt-2">Try Again</Button>
           </div>
           <div v-else>
-            <component 
-              :is="currentComponent.component" 
-              v-bind="currentComponent.props || {}"
-              @vue:error="handleComponentError"
-            />
+            <TooltipProvider>
+              <component 
+                :is="currentComponent.component" 
+                v-bind="currentComponent.props || {}"
+                @vue:error="handleComponentError"
+              />
+            </TooltipProvider>
           </div>
         </div>
 
@@ -122,10 +124,11 @@ import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import PageLayout from '@/components/custom/PageLayout.vue'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
+import { TooltipProvider } from '@/components/ui/tooltip'
 
 // Import all custom components
 import ActivationForm from '@/components/custom/ActivationForm.vue'
-import KontaktPersoner from '@/components/custom/KontaktPersoner.vue'
+import ContactPersonsTable from '@/components/custom/ContactPersonsTable.vue'
 import TabAllmant from '@/components/custom/TabAllmant.vue'
 import DataTable from '@/components/custom/DataTable.vue'
 import SearchFilterBar from '@/components/custom/SearchFilterBar.vue'
@@ -138,6 +141,7 @@ import DashboardCard from '@/components/custom/DashboardCard.vue'
 import TitleBreadcrumbs from '@/components/custom/TitleBreadcrumbs.vue'
 import TitleAnalytics from '@/components/custom/TitleAnalytics.vue'
 import StandardHeader from '@/components/custom/StandardHeader.vue'
+import AddContactDialog from '@/components/custom/AddContactDialog.vue'
 
 // Simple fallback component for problematic ones
 const FallbackComponent = {
@@ -200,6 +204,20 @@ const mockStats = [
   { value: 14, label: 'Inactive', color: 'text-orange-600' }
 ]
 
+// Mock breadcrumbs for demonstration
+const mockBreadcrumbs = [
+  { label: 'Home', to: '/' },
+  { label: 'Demo', to: '/demo' },
+  { label: 'Page Title', isCurrentPage: true }
+]
+
+const mockCompleteHeaderBreadcrumbs = [
+  { label: 'Home', to: '/' },
+  { label: 'Demo', to: '/demo' },
+  { label: 'Components', to: '/custom-components' },
+  { label: 'Complete Header', isCurrentPage: true }
+]
+
 // Component definitions with mock props
 const components = [
   { 
@@ -207,8 +225,8 @@ const components = [
     component: ActivationForm
   },
   { 
-    name: 'KontaktPersoner', 
-    component: KontaktPersoner,
+    name: 'ContactPersonsTable', 
+    component: ContactPersonsTable,
     props: {
       contactPersons: [
         { 
@@ -322,8 +340,8 @@ const components = [
     component: TitleBreadcrumbs,
     props: {
       title: 'Demo Page Title',
-      breadcrumbs: 'Home / Demo / Page Title',
-      description: 'This is an optional description for the page'
+      breadcrumbs: mockBreadcrumbs,
+      description: 'This demonstrates functional breadcrumbs with clickable navigation'
     }
   },
   { 
@@ -339,10 +357,17 @@ const components = [
     component: StandardHeader,
     props: {
       title: 'Complete Header Demo',
-      breadcrumbs: 'Home / Demo / Complete Header',
-      description: 'This demonstrates the full header with title, breadcrumbs, and analytics',
+      breadcrumbs: mockCompleteHeaderBreadcrumbs,
+      description: 'This demonstrates the full header with functional breadcrumbs and analytics',
       showStats: true,
       stats: mockStats
+    }
+  },
+  { 
+    name: 'AddContactDialog', 
+    component: AddContactDialog,
+    props: {
+      // Add any necessary props here
     }
   }
 ]

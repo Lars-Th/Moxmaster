@@ -15,7 +15,16 @@ import { useCustomerStore, type Customer } from '@/stores/customerStore'
 import TabAllmant from '../components/custom/TabAllmant.vue'
 import TabBesok from '../components/custom/TabBesok.vue'
 import TabFaktura from '../components/custom/TabFaktura.vue'
-import Kontaktpersoner from '../components/custom/KontaktPersoner.vue'
+import ContactPersonsTable from '../components/custom/ContactPersonsTable.vue'
+import AddContactDialog from '../components/custom/AddContactDialog.vue'
+import { Separator } from '@/components/ui/separator'
+import { TooltipProvider } from '@/components/ui/tooltip'
+
+interface BreadcrumbItem {
+  label: string
+  to?: string | { name: string; params?: Record<string, any> }
+  isCurrentPage?: boolean
+}
 
 const route = useRoute()
 const router = useRouter()
@@ -27,6 +36,13 @@ const customerStore = useCustomerStore()
 // Get customer from store using computed to make it reactive
 const customer = computed(() => customerStore.getCustomerById(Number(route.params.id)))
 const contactPersons = computed(() => customerStore.getContactPersonsByCustomerId(Number(route.params.id)))
+
+// Functional breadcrumbs with customer name
+const breadcrumbs = computed((): BreadcrumbItem[] => [
+  { label: 'Home', to: '/' },
+  { label: 'Kunder', to: '/customers' },
+  { label: customer.value?.companyName || 'Kunddetaljer', isCurrentPage: true }
+])
 
 const editedCustomer = ref<Customer | null>(customer.value ? { ...customer.value } : null)
 const hasChanges = ref(false)
@@ -230,7 +246,7 @@ const handleEditContact = (person: any) => {
 <template>
   <PageLayout
     title="Kunder"
-    breadcrumbs="Home / Kunder / Kunddetaljer"
+    :breadcrumbs="breadcrumbs"
     :show-stats="false"
   >
     <template #actions>
@@ -313,13 +329,22 @@ const handleEditContact = (person: any) => {
       </Tabs>
 
       <!-- Kontaktpersoner sektion -->
-      <Kontaktpersoner 
-        :contact-persons="contactPersons"
-        @add-contact="handleAddContact"
-        @delete-contact="handleDeleteContact"
-        @send-email="handleSendEmail"
-        @edit-contact="handleEditContact"
-      />
+      <div class="mt-12">
+        <Separator class="mb-6" />
+        <div class="flex items-center justify-between mb-6 px-6">
+          <h2 class="text-lg font-semibold">Kontaktpersoner</h2>
+          <AddContactDialog @add-contact="handleAddContact" />
+        </div>
+        
+        <TooltipProvider>
+          <ContactPersonsTable 
+            :contact-persons="contactPersons"
+            @delete-contact="handleDeleteContact"
+            @send-email="handleSendEmail"
+            @edit-contact="handleEditContact"
+          />
+        </TooltipProvider>
+      </div>
     </div>
   </PageLayout>
 </template> 

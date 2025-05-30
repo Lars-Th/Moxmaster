@@ -2,6 +2,12 @@
 import TitleBreadcrumbs from './TitleBreadcrumbs.vue'
 import TitleAnalytics from './TitleAnalytics.vue'
 
+interface BreadcrumbItem {
+  label: string
+  to?: string | { name: string; params?: Record<string, any> }
+  isCurrentPage?: boolean
+}
+
 interface Stat {
   value: string | number
   label: string
@@ -11,7 +17,7 @@ interface Stat {
 
 interface Props {
   title: string
-  breadcrumbs: string
+  breadcrumbs: BreadcrumbItem[]
   description?: string
   showStats?: boolean
   stats?: Stat[]

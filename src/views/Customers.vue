@@ -8,8 +8,20 @@ import TitleAnalytics from '@/components/custom/TitleAnalytics.vue'
 import DataTable from '@/components/custom/DataTable.vue'
 import ActionBar from '@/components/custom/ActionBar.vue'
 
+interface BreadcrumbItem {
+  label: string
+  to?: string | { name: string; params?: Record<string, any> }
+  isCurrentPage?: boolean
+}
+
 const router = useRouter()
 const customerStore = useCustomerStore()
+
+// Functional breadcrumbs
+const breadcrumbs: BreadcrumbItem[] = [
+  { label: 'Home', to: '/' },
+  { label: 'Kunder', isCurrentPage: true }
+]
 
 // Column configuration for the data table
 const columns = [
@@ -109,7 +121,7 @@ const deleteCustomer = (customer: any, event: Event) => {
         <!-- Title and breadcrumbs -->
         <TitleBreadcrumbs 
           title="Kunder" 
-          breadcrumbs="Home / Kunder"
+          :breadcrumbs="breadcrumbs"
           description="Manage and view all customer information"
         />
         

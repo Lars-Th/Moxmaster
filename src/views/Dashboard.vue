@@ -5,10 +5,22 @@ import { Button } from '@/components/ui/button'
 import StandardHeader from '@/components/custom/StandardHeader.vue'
 import DashboardCard from '@/components/custom/DashboardCard.vue'
 
+interface BreadcrumbItem {
+  label: string
+  to?: string | { name: string; params?: Record<string, any> }
+  isCurrentPage?: boolean
+}
+
 const dashboardStore = useDashboardStore()
 
 // Statistik för dashboard
 const stats = computed(() => dashboardStore.stats)
+
+// Functional breadcrumbs
+const breadcrumbs: BreadcrumbItem[] = [
+  { label: 'Home', to: '/' },
+  { label: 'Dashboard', isCurrentPage: true }
+]
 </script>
 
 <template>
@@ -16,7 +28,7 @@ const stats = computed(() => dashboardStore.stats)
     <!-- Using StandardHeader directly -->
     <StandardHeader
       title="Dashboard"
-      breadcrumbs="Home / Dashboard"
+      :breadcrumbs="breadcrumbs"
       :show-stats="true"
       :stats="stats"
     />
