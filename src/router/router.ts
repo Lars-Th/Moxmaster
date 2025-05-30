@@ -7,6 +7,9 @@ import {
   Settings as SettingsIcon,
   UserCheck,
   Search,
+  Clock,
+  Truck,
+  Wrench,
   Palette
 } from 'lucide-vue-next'
 import Dashboard from '@/views/Dashboard.vue'
@@ -15,6 +18,10 @@ import Test from '@/views/Test.vue'
 import Customers from '@/views/Customers.vue'
 import CustomerDetails from '@/views/CustomerDetails.vue'
 import Contacts from '@/views/Contacts.vue'
+import WorkOrders from '@/views/WorkOrders.vue'
+import WorkOrderDetails from '@/views/WorkOrderDetails.vue'
+import Machines from '@/views/Machines.vue'
+import Tools from '@/views/Tools.vue'
 import Prospector from '@/views/Prospector.vue'
 import CustomComponents from '@/views/CustomComponents.vue'
 
@@ -55,6 +62,36 @@ const routeDefinitions = [
     name: 'contacts',
     component: Contacts,
     navigation: { name: 'Kontaktpersoner', icon: UserCheck }
+  },
+  {
+    path: '/work-orders',
+    name: 'work-orders',
+    component: WorkOrders,
+    navigation: { name: 'Arbetsorder', icon: Clock }
+  },
+  {
+    path: '/work-orders/new',
+    name: 'work-order-new',
+    component: WorkOrderDetails
+    // No navigation property means it won't appear in nav
+  },
+  {
+    path: '/work-orders/:id',
+    name: 'work-order-details',
+    component: WorkOrderDetails
+    // No navigation property means it won't appear in nav
+  },
+  {
+    path: '/machines',
+    name: 'machines',
+    component: Machines,
+    navigation: { name: 'Maskiner', icon: Truck }
+  },
+  {
+    path: '/tools',
+    name: 'tools',
+    component: Tools,
+    navigation: { name: 'Redskap', icon: Wrench }
   },
   {
     path: '/prospector',

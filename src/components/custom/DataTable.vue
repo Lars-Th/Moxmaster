@@ -18,7 +18,7 @@ interface Column {
   sortable?: boolean
   width?: string
   align?: 'left' | 'center' | 'right'
-  type?: 'text' | 'badge' | 'actions'
+  type?: 'text' | 'badge' | 'actions' | 'custom'
   badgeVariant?: (value: any) => string
 }
 
@@ -32,6 +32,8 @@ interface Props {
   onRowClick?: (item: any) => void
   onSendEmail?: (item: any, event: Event) => void
   onDelete?: (item: any, event: Event) => void
+  onView?: (item: any, event: Event) => void
+  onEdit?: (item: any, event: Event) => void
   deleteConfirmMessage?: string
 }
 
@@ -255,28 +257,42 @@ defineExpose({
               {{ getCellValue(item, column) }}
             </Badge>
             
+            <!-- Custom type with slot -->
+            <slot 
+              v-else-if="column.type === 'custom'" 
+              :name="`cell-${column.key}`" 
+              :value="getCellValue(item, column)" 
+              :row="item"
+            >
+              {{ getCellValue(item, column) }}
+            </slot>
+            
             <!-- Actions type -->
             <div v-else-if="column.type === 'actions'" class="flex gap-1 justify-end">
-              <Button 
-                v-if="onSendEmail && item.email"
-                variant="ghost" 
-                size="sm" 
-                class="text-xs h-6 w-6 p-0" 
-                @click="handleSendEmail(item, $event)"
-                title="Skicka e-post"
-              >
-                <Mail class="h-3 w-3" />
-              </Button>
-              <Button 
-                v-if="onDelete"
-                variant="ghost" 
-                size="sm" 
-                class="text-xs h-6 w-6 p-0 text-red-600 hover:text-red-800" 
-                @click="handleDelete(item, $event)"
-                title="Radera"
-              >
-                <Trash2 class="h-3 w-3" />
-              </Button>
+              <!-- Custom actions slot -->
+              <slot name="actions" :row="item">
+                <!-- Default actions -->
+                <Button 
+                  v-if="onSendEmail && item.email"
+                  variant="ghost" 
+                  size="sm" 
+                  class="text-xs h-6 w-6 p-0" 
+                  @click="handleSendEmail(item, $event)"
+                  title="Skicka e-post"
+                >
+                  <Mail class="h-3 w-3" />
+                </Button>
+                <Button 
+                  v-if="onDelete"
+                  variant="ghost" 
+                  size="sm" 
+                  class="text-xs h-6 w-6 p-0 text-red-600 hover:text-red-800" 
+                  @click="handleDelete(item, $event)"
+                  title="Radera"
+                >
+                  <Trash2 class="h-3 w-3" />
+                </Button>
+              </slot>
             </div>
             
             <!-- Regular text -->

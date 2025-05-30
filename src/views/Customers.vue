@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCustomerStore } from '@/stores/customerStore'
+import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-vue-next'
 import TitleBreadcrumbs from '@/components/custom/TitleBreadcrumbs.vue'
 import TitleAnalytics from '@/components/custom/TitleAnalytics.vue'
@@ -67,31 +68,31 @@ const filterOptions = [
   { value: 'Inaktiv', label: 'Inaktiv' }
 ]
 
-// Action buttons configuration
-const actionButtons = [
-  {
-    label: 'Lägg till ny kund',
-    icon: Plus,
-    onClick: addNewCustomer,
-    class: 'text-xs h-8'
-  }
-]
-
 // Statistik för PageLayout
 const stats = computed(() => [
   {
-    value: customerStore.totalCustomers,
-    label: 'Totalt kunder'
+    title: 'Totalt kunder',
+    value: customerStore.totalCustomers.toString(),
+    change: '+12%',
+    trend: 'up' as const
   },
   {
-    value: customerStore.activeCustomers.length,
-    label: 'Aktiva',
-    color: 'text-green-600'
+    title: 'Aktiva kunder',
+    value: customerStore.activeCustomers.length.toString(),
+    change: '+5%',
+    trend: 'up' as const
   },
   {
-    value: customerStore.inactiveCustomers.length,
-    label: 'Inaktiva',
-    color: 'text-orange-600'
+    title: 'Inaktiva kunder',
+    value: customerStore.inactiveCustomers.length.toString(),
+    change: '-2%',
+    trend: 'down' as const
+  },
+  {
+    title: 'Nya denna månad',
+    value: '8',
+    change: '+15%',
+    trend: 'up' as const
   }
 ])
 
