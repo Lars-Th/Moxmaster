@@ -135,7 +135,7 @@ import SearchFilterBar from '@/components/custom/SearchFilterBar.vue'
 import StatusNotification from '@/components/custom/StatusNotification.vue'
 import TabBesok from '@/components/custom/TabBesok.vue'
 import TabFaktura from '@/components/custom/TabFaktura.vue'
-import ActionBar from '@/components/custom/ActionBar.vue'
+import SearchAndFilter from '@/components/custom/SearchAndFilter.vue'
 import CompanyResultsTable from '@/components/custom/CompanyResultsTable.vue'
 import DashboardCard from '@/components/custom/DashboardCard.vue'
 import TitleBreadcrumbs from '@/components/custom/TitleBreadcrumbs.vue'
@@ -310,8 +310,8 @@ const components = [
     }
   },
   { 
-    name: 'ActionBar', 
-    component: ActionBar,
+    name: 'SearchAndFilter', 
+    component: SearchAndFilter,
     props: {
       title: 'Demo Action Bar',
       actions: [

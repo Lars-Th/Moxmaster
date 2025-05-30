@@ -5,7 +5,7 @@ import { useContactStore } from '@/stores/contactStore'
 import { Plus } from 'lucide-vue-next'
 import PageLayout from '@/components/custom/PageLayout.vue'
 import DataTable from '@/components/custom/DataTable.vue'
-import ActionBar from '@/components/custom/ActionBar.vue'
+import ActionBar from '@/components/custom/SearchAndFilter.vue'
 
 const router = useRouter()
 const contactStore = useContactStore()
