@@ -1,376 +1,163 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
 
-interface CompanyData {
-  name: string
-  organisationNumber: string
-  description: string
-  employees: number
-  turnOver: number
-  legalEntity: string
-  vatNumber: string
-  phone: string
-  address: string
-  postCode: string
-  city: string
-}
-
-interface APICredentials {
-  client_id: string
-  client_secret: string
-}
-
-interface JSONRPCResponse<T> {
-  jsonrpc: string
+export interface CompanyFilter {
   id: number
-  result: T
+  name: string
+  address: string
+  branch: string
+  city: string
+  employees: number
+  status: 'Active' | 'Inactive'
+  founded: string
 }
 
-export const useProspectorStore = defineStore('prospector', () => {
-  // State
-  const isAuthenticated = ref(false)
-  const credentials = ref<APICredentials | null>(null)
-  const loading = ref(false)
-  const searchResults = ref<CompanyData[]>([])
-  const searchFilters = ref<any>(null)
-  const error = ref<string | null>(null)
+interface ProspectorState {
+  companies: CompanyFilter[]
+  selectedCompanies: CompanyFilter[]
+  filterCriteria: {
+    address: string
+    branch: string
+    city: string
+    minEmployees: number
+    maxEmployees: number
+  }
+  predefinedText: string
+}
 
-  // Computed
-  const hasResults = computed(() => searchResults.value.length > 0)
-  const isLoading = computed(() => loading.value)
-
-  // Helper function to make requests to server-side controllers
-  const makeControllerRequest = async <T>(endpoint: string, options: RequestInit = {}): Promise<T> => {
-    const response = await fetch(endpoint, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
+export const useProspectorStore = defineStore('prospector', {
+  state: (): ProspectorState => ({
+    companies: [
+      {
+        id: 1,
+        name: 'Tech Solutions AB',
+        address: 'Kungsgatan 12, 111 43 Stockholm',
+        branch: 'Technology',
+        city: 'Stockholm',
+        employees: 150,
+        status: 'Active',
+        founded: '2010'
       },
-      credentials: 'include', // Include cookies for Odoo authentication
-    })
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-    }
-
-    const jsonRpcResponse: JSONRPCResponse<T> = await response.json()
-    return jsonRpcResponse.result
-  }
-
-  // Actions
-  const initializeAuthentication = async (): Promise<void> => {
-    loading.value = true
-    error.value = null
-
-    try {
-      // First, validate if we already have a valid token
-      const isValid = await makeControllerRequest<boolean>('/prospector_validate_token')
-      
-      if (isValid) {
-        isAuthenticated.value = true
-        // Get account details to populate credentials info
-        await getAccountDetails()
-      } else {
-        isAuthenticated.value = false
-        credentials.value = null
+      {
+        id: 2,
+        name: 'Green Energy Corp',
+        address: 'Storgatan 45, 411 38 Göteborg',
+        branch: 'Energy',
+        city: 'Göteborg',
+        employees: 300,
+        status: 'Active',
+        founded: '2008'
+      },
+      {
+        id: 3,
+        name: 'Design Studio Ltd',
+        address: 'Malmövägen 78, 214 31 Malmö',
+        branch: 'Design',
+        city: 'Malmö',
+        employees: 25,
+        status: 'Active',
+        founded: '2015'
+      },
+      {
+        id: 4,
+        name: 'Finance Partners',
+        address: 'Vasagatan 22, 111 20 Stockholm',
+        branch: 'Finance',
+        city: 'Stockholm',
+        employees: 80,
+        status: 'Inactive',
+        founded: '2012'
+      },
+      {
+        id: 5,
+        name: 'Healthcare Innovation',
+        address: 'Universitetsvägen 14, 581 83 Linköping',
+        branch: 'Healthcare',
+        city: 'Linköping',
+        employees: 200,
+        status: 'Active',
+        founded: '2005'
       }
-    } catch (err) {
-      console.error('Failed to validate existing token:', err)
-      isAuthenticated.value = false
-      credentials.value = null
-    } finally {
-      loading.value = false
-    }
-  }
+    ],
+    selectedCompanies: [],
+    filterCriteria: {
+      address: '',
+      branch: '',
+      city: '',
+      minEmployees: 0,
+      maxEmployees: 1000
+    },
+    predefinedText: `Welcome to the Company Prospector!
 
-  const startAuthenticationFlow = async (): Promise<void> => {
-    loading.value = true
-    error.value = null
+This powerful tool helps you discover and analyze potential business partners and clients. Our comprehensive database contains detailed information about companies across various industries and locations.
 
-    try {
-      // Call the server-side login endpoint which will handle OAuth flow
-      const authResult = await makeControllerRequest<any>('/prospector_login')
-      
-      if (authResult && authResult.redirectUrl) {
-        // Redirect to OAuth provider
-        window.location.href = authResult.redirectUrl
-      } else {
-        throw new Error('Failed to get OAuth URL')
+Key Features:
+• Advanced filtering by location, industry, and company size
+• Real-time company data and insights
+• Export capabilities for selected prospects
+• Integration with CRM systems
+
+Use the filters below to narrow down your search and find the perfect companies that match your business criteria. Click on any company to view detailed information and add them to your prospect list.
+
+Start exploring now and unlock new business opportunities!`
+  }),
+  getters: {
+    activeCompanies: (state): CompanyFilter[] => 
+      state.companies.filter(company => company.status === 'Active'),
+    companiesByBranch: (state) => (branch: string): CompanyFilter[] =>
+      state.companies.filter(company => 
+        company.branch.toLowerCase().includes(branch.toLowerCase())
+      ),
+    companiesByCity: (state) => (city: string): CompanyFilter[] =>
+      state.companies.filter(company => 
+        company.city.toLowerCase().includes(city.toLowerCase())
+      ),
+    companiesByEmployeeRange: (state) => (min: number, max: number): CompanyFilter[] =>
+      state.companies.filter(company => 
+        company.employees >= min && company.employees <= max
+      ),
+    filteredCompanies: (state): CompanyFilter[] => {
+      return state.companies.filter(company => {
+        const matchesAddress = !state.filterCriteria.address || 
+          company.address.toLowerCase().includes(state.filterCriteria.address.toLowerCase())
+        const matchesBranch = !state.filterCriteria.branch || 
+          company.branch.toLowerCase().includes(state.filterCriteria.branch.toLowerCase())
+        const matchesCity = !state.filterCriteria.city || 
+          company.city.toLowerCase().includes(state.filterCriteria.city.toLowerCase())
+        const matchesEmployees = company.employees >= state.filterCriteria.minEmployees && 
+          company.employees <= state.filterCriteria.maxEmployees
+
+        return matchesAddress && matchesBranch && matchesCity && matchesEmployees
+      })
+    },
+    totalCompanies: (state): number => state.companies.length,
+    selectedCompaniesCount: (state): number => state.selectedCompanies.length
+  },
+  actions: {
+    updateFilterCriteria(criteria: Partial<ProspectorState['filterCriteria']>) {
+      this.filterCriteria = { ...this.filterCriteria, ...criteria }
+    },
+    addToSelected(company: CompanyFilter) {
+      if (!this.selectedCompanies.find(c => c.id === company.id)) {
+        this.selectedCompanies.push(company)
       }
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to start authentication'
-      console.error('Authentication flow failed:', err)
-    } finally {
-      loading.value = false
+    },
+    removeFromSelected(companyId: number) {
+      this.selectedCompanies = this.selectedCompanies.filter(c => c.id !== companyId)
+    },
+    clearSelected() {
+      this.selectedCompanies = []
+    },
+    clearFilters() {
+      this.filterCriteria = {
+        address: '',
+        branch: '',
+        city: '',
+        minEmployees: 0,
+        maxEmployees: 1000
+      }
+    },
+    updatePredefinedText(newText: string) {
+      this.predefinedText = newText
     }
-  }
-
-  const getSearchFilters = async (): Promise<any> => {
-    if (!isAuthenticated.value) {
-      throw new Error('Not authenticated')
-    }
-
-    loading.value = true
-    error.value = null
-
-    try {
-      const filters = await makeControllerRequest<any>('/prospector_get_search_filters')
-      searchFilters.value = filters
-      return filters
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to get search filters'
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  const getAIFilters = async (prompt: string): Promise<any> => {
-    if (!isAuthenticated.value) {
-      throw new Error('Not authenticated')
-    }
-
-    loading.value = true
-    error.value = null
-
-    try {
-      const filters = await makeControllerRequest<any>('/prospector_ai_prompt_filters', {
-        method: 'POST',
-        body: JSON.stringify({
-          params: { prompt }
-        })
-      })
-      
-      searchFilters.value = filters
-      return filters
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to get AI filters'
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  const previewFilterResults = async (filters: any): Promise<any> => {
-    if (!isAuthenticated.value) {
-      throw new Error('Not authenticated')
-    }
-
-    loading.value = true
-    error.value = null
-
-    try {
-      const preview = await makeControllerRequest<any>('/prospector_preview_filter_results', {
-        method: 'POST',
-        body: JSON.stringify({
-          params: filters
-        })
-      })
-      
-      return preview
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to preview results'
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  const searchCompanies = async (filters: any): Promise<CompanyData[]> => {
-    if (!isAuthenticated.value) {
-      throw new Error('Not authenticated')
-    }
-
-    loading.value = true
-    error.value = null
-
-    try {
-      const results = await makeControllerRequest<CompanyData[]>('/prospector_filter_results', {
-        method: 'POST',
-        body: JSON.stringify({
-          params: filters
-        })
-      })
-      
-      searchResults.value = results
-      return results
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to search companies'
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  const createLeads = async (companies: CompanyData[]): Promise<boolean> => {
-    if (!isAuthenticated.value) {
-      throw new Error('Not authenticated')
-    }
-
-    loading.value = true
-    error.value = null
-
-    try {
-      const result = await makeControllerRequest<boolean>('/prospector_create_leads', {
-        method: 'POST',
-        body: JSON.stringify({
-          params: companies
-        })
-      })
-      
-      return result
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to create leads'
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  const getAccountDetails = async (): Promise<any> => {
-    if (!isAuthenticated.value) {
-      throw new Error('Not authenticated')
-    }
-
-    try {
-      const accountDetails = await makeControllerRequest<any>('/prospector_my_account')
-      return accountDetails
-    } catch (err) {
-      console.error('Failed to get account details:', err)
-      throw err
-    }
-  }
-
-  const getAllOrganisationNumbers = async (): Promise<string[]> => {
-    try {
-      const orgNumbers = await makeControllerRequest<string[]>('/prospector_get_all_organisation_numbers', {
-        method: 'POST'
-      })
-      return orgNumbers
-    } catch (err) {
-      console.error('Failed to get organisation numbers:', err)
-      throw err
-    }
-  }
-
-  const getAllLeadOrganisationNumbers = async (): Promise<string[]> => {
-    try {
-      const orgNumbers = await makeControllerRequest<string[]>('/prospector_get_all_lead_organisation_numbers', {
-        method: 'POST'
-      })
-      return orgNumbers
-    } catch (err) {
-      console.error('Failed to get lead organisation numbers:', err)
-      throw err
-    }
-  }
-
-  const getLandingPageInformation = async (): Promise<any> => {
-    try {
-      const info = await makeControllerRequest<any>('/get_landing_page_information')
-      return info
-    } catch (err) {
-      console.error('Failed to get landing page information:', err)
-      throw err
-    }
-  }
-
-  const getAISearchInformation = async (): Promise<any> => {
-    try {
-      const info = await makeControllerRequest<any>('/get_ai_search_information')
-      return info
-    } catch (err) {
-      console.error('Failed to get AI search information:', err)
-      throw err
-    }
-  }
-
-  const generateSearchDescription = async (filters: any): Promise<string> => {
-    try {
-      const description = await makeControllerRequest<string>('/prospector_search_description', {
-        method: 'POST',
-        body: JSON.stringify({
-          params: filters
-        })
-      })
-      return description
-    } catch (err) {
-      console.error('Failed to generate search description:', err)
-      throw err
-    }
-  }
-
-  const applyQualityFilter = async (detailedResults: any[], filters: any): Promise<any> => {
-    try {
-      const qualityResults = await makeControllerRequest<any>('/prospector_quality_filter', {
-        method: 'POST',
-        body: JSON.stringify({
-          params: {
-            detailedResults,
-            filters
-          }
-        })
-      })
-      return qualityResults
-    } catch (err) {
-      console.error('Failed to apply quality filter:', err)
-      throw err
-    }
-  }
-
-  const clearResults = () => {
-    searchResults.value = []
-    searchFilters.value = null
-    error.value = null
-  }
-
-  const logout = async (): Promise<void> => {
-    loading.value = true
-    
-    try {
-      await makeControllerRequest<any>('/prospector_logout')
-    } catch (err) {
-      console.error('Logout error:', err)
-    } finally {
-      isAuthenticated.value = false
-      credentials.value = null
-      searchResults.value = []
-      searchFilters.value = null
-      error.value = null
-      loading.value = false
-    }
-  }
-
-  return {
-    // State
-    isAuthenticated,
-    credentials,
-    loading,
-    searchResults,
-    searchFilters,
-    error,
-    
-    // Computed
-    hasResults,
-    isLoading,
-    
-    // Actions
-    initializeAuthentication,
-    startAuthenticationFlow,
-    getSearchFilters,
-    getAIFilters,
-    previewFilterResults,
-    searchCompanies,
-    createLeads,
-    getAccountDetails,
-    getAllOrganisationNumbers,
-    getAllLeadOrganisationNumbers,
-    getLandingPageInformation,
-    getAISearchInformation,
-    generateSearchDescription,
-    applyQualityFilter,
-    clearResults,
-    logout
   }
 }) 

@@ -3,6 +3,7 @@ import Dashboard from '@/components/views/Dashboard.vue'
 import Customers from '@/components/views/Customers.vue'
 import CustomerDetails from '@/components/views/CustomerDetails.vue'
 import Contacts from '@/components/views/Contacts.vue'
+import Prospector from '@/views/Prospector.vue'
 import NotificationDemo from '@/components/views/NotificationDemo.vue'
 import ValidationDemo from '@/components/views/ValidationDemo.vue'
 
@@ -28,6 +29,11 @@ const router = createRouter({
       path: '/contacts',
       name: 'contacts',
       component: Contacts
+    },
+    {
+      path: '/prospector',
+      name: 'prospector',
+      component: Prospector
     },
     {
       path: '/demo',
