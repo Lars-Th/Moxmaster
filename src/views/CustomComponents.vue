@@ -142,6 +142,8 @@ import TitleBreadcrumbs from '@/components/custom/TitleBreadcrumbs.vue'
 import TitleAnalytics from '@/components/custom/TitleAnalytics.vue'
 import StandardHeader from '@/components/custom/StandardHeader.vue'
 import AddContactDialog from '@/components/custom/AddContactDialog.vue'
+import Toast from '@/components/custom/Toast.vue'
+import ToastContainer from '@/components/custom/ToastContainer.vue'
 
 // Simple fallback component for problematic ones
 const FallbackComponent = {
@@ -368,6 +370,25 @@ const components = [
     component: AddContactDialog,
     props: {
       // Add any necessary props here
+    }
+  },
+  { 
+    name: 'Toast', 
+    component: Toast,
+    props: {
+      show: true,
+      type: 'success',
+      title: 'Demo Toast',
+      message: 'This is a demonstration of the Toast component with a success message.',
+      duration: 0, // Don't auto-close in demo
+      position: 'top-center'
+    }
+  },
+  { 
+    name: 'ToastContainer', 
+    component: ToastContainer,
+    props: {
+      // ToastContainer gets its data from the useToast composable
     }
   }
 ]
