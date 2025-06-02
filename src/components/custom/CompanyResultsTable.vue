@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useProspectorStore } from '@/stores/prospectorStore'
+import { useProspectorStore } from '@/storages/prospectorStore'
 import DataTable from '@/components/custom/DataTable.vue'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'

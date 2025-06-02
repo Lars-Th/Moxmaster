@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useWorkOrderStore } from '@/stores/workOrderStore'
+import { useWorkOrderStore } from '@/storages/workOrderStore'
 import { useNotifications } from '@/composables/useNotifications'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'

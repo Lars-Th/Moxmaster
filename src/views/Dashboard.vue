@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useDashboardStore } from '@/stores/dashboardStore'
+import { useDashboardStorage } from '@/storages/dashboardStorage'
 import { Button } from '@/components/ui/button'
 import StandardHeader from '@/components/custom/StandardHeader.vue'
 import DashboardCard from '@/components/custom/DashboardCard.vue'
@@ -11,10 +11,10 @@ interface BreadcrumbItem {
   isCurrentPage?: boolean
 }
 
-const dashboardStore = useDashboardStore()
+const dashboardStorage = useDashboardStorage()
 
 // Statistik för dashboard
-const stats = computed(() => dashboardStore.stats)
+const stats = computed(() => dashboardStorage.stats)
 
 // Functional breadcrumbs
 const breadcrumbs: BreadcrumbItem[] = [
@@ -39,21 +39,21 @@ const breadcrumbs: BreadcrumbItem[] = [
         <DashboardCard
           title="Total Users"
           description="Active users this month"
-          :value="dashboardStore.totalUsers"
+          :value="dashboardStorage.totalUsers"
           :badge="{ text: '+12% from last month', variant: 'secondary' }"
         />
 
         <DashboardCard
           title="Revenue"
           description="Total revenue this month"
-          :value="dashboardStore.monthlyRevenue"
+          :value="dashboardStorage.monthlyRevenue"
           :badge="{ text: '+8% from last month', variant: 'default' }"
         />
 
         <DashboardCard
           title="Orders"
           description="New orders this week"
-          :value="dashboardStore.newOrders"
+          :value="dashboardStorage.newOrders"
           :badge="{ text: '+3% from last week', variant: 'outline' }"
         />
       </div>
@@ -65,7 +65,7 @@ const breadcrumbs: BreadcrumbItem[] = [
       >
         <div class="space-x-2">
           <Button 
-            v-for="action in dashboardStore.quickActions" 
+            v-for="action in dashboardStorage.quickActions" 
             :key="action.id"
             class="text-xs"
             @click="console.log('Action:', action.action)"
@@ -79,7 +79,7 @@ const breadcrumbs: BreadcrumbItem[] = [
         <div class="grid gap-3">
           <div class="flex flex-col space-y-2">
             <Button 
-              v-for="item in dashboardStore.navigationItems" 
+              v-for="item in dashboardStorage.navigationItems" 
               :key="item.id"
               variant="outline" 
               class="text-xs" 

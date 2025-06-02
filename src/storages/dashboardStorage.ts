@@ -25,7 +25,7 @@ interface DashboardState {
   navigationItems: NavigationItem[]
 }
 
-export const useDashboardStore = defineStore('dashboard', {
+export const useDashboardStorage = defineStore('dashboard', {
   state: (): DashboardState => ({
     stats: dashboardData.stats as DashboardStat[],
     quickActions: dashboardData.quickActions as QuickAction[],

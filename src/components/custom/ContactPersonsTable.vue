@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Mail, Trash2, Star, Edit, ChevronUp, ChevronDown, ArrowUpDown } from 'lucide-vue-next'
-import type { ContactPerson } from '@/stores/customerStore'
+import type { ContactPerson } from '@/storages/customerStorage'
 
 interface Props {
   contactPersons: ContactPerson[]

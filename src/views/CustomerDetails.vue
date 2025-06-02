@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/composables/useToast'
 import { useNotifications } from '@/composables/useNotifications'
@@ -10,7 +9,7 @@ import { Building2, MapPin, Receipt } from 'lucide-vue-next'
 import StandardHeader from '@/components/custom/StandardHeader.vue'
 import ActionBar from '@/components/custom/ActionBar.vue'
 import StatusNotification from '@/components/custom/StatusNotification.vue'
-import { useCustomerStore, type Customer } from '@/stores/customerStore'
+import { useCustomerStorage, type Customer } from '@/storages/customerStorage'
 
 // Import tab components
 import TabAllmant from '../components/custom/TabAllmant.vue'
@@ -32,7 +31,7 @@ const router = useRouter()
 const { success, error } = useToast()
 const { success: notificationSuccess, error: notificationError, confirm } = useNotifications()
 const { validateAll, validateField, touchField, hasError, getError, isRequired, clearErrors, allErrors } = useValidation()
-const customerStore = useCustomerStore()
+const customerStore = useCustomerStorage()
 
 // Get customer from store using computed to make it reactive
 const customer = computed(() => customerStore.getCustomerById(Number(route.params.id)))

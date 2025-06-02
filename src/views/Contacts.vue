@@ -1,20 +1,19 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useContactStore } from '@/stores/contactStore'
-import { Button } from '@/components/ui/button'
+import { useContactStorage } from '@/storages/contactStorage'
 import { Plus } from 'lucide-vue-next'
 import StandardHeader from '@/components/custom/StandardHeader.vue'
 import ActionBar from '@/components/custom/ActionBar.vue'
 import DataTable from '@/components/custom/DataTable.vue'
 
 const router = useRouter()
-const contactStore = useContactStore()
+const contactStorage = useContactStorage()
 
 // Functional breadcrumbs
 const breadcrumbs = [
   { label: 'Home', to: '/' },
-  { label: `Kontaktpersoner (${contactStore.totalContacts})`, isCurrentPage: true }
+  { label: `Kontaktpersoner (${contactStorage.totalContacts})`, isCurrentPage: true }
 ]
 
 // Column configuration for the data table
@@ -68,7 +67,7 @@ const actionButtons = [
 
 // Transform contacts data to match filter expectations
 const transformedContacts = computed(() => {
-  return contactStore.contacts.map(contact => ({
+  return contactStorage.contacts.map(contact => ({
     ...contact,
     // Transform isMainContact boolean to string for filtering
     isMainContactFilter: contact.isMainContact.toString(),
@@ -81,13 +80,13 @@ const transformedContacts = computed(() => {
 const stats = computed(() => [
   {
     label: 'Totalt kontakter',
-    value: contactStore.totalContacts.toString(),
+    value: contactStorage.totalContacts.toString(),
     change: '+8%',
     trend: 'up' as const
   },
   {
     label: 'Huvudkontakter',
-    value: contactStore.mainContacts.length.toString(),
+    value: contactStorage.mainContacts.length.toString(),
     change: '+3%',
     trend: 'up' as const,
     color: 'text-green-600'
@@ -121,7 +120,7 @@ const sendEmail = (contact: any, event: Event) => {
 }
 
 const deleteContact = (contact: any, event: Event) => {
-  contactStore.removeContact(contact.id)
+  contactStorage.removeContact(contact.id)
 }
 </script>
 

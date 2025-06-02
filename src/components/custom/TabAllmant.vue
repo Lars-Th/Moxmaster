@@ -206,7 +206,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import FormField from '@/components/ui/FormField.vue'
 import { useValidation } from '@/composables/useValidation'
-import type { Customer } from '@/stores/customerStore'
+import type { Customer } from '@/storages/customerStorage'
 
 interface Props {
   editedCustomer: Customer

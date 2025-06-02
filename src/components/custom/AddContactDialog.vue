@@ -9,7 +9,7 @@ import { Plus } from 'lucide-vue-next'
 import { useNotifications } from '@/composables/useNotifications'
 import { useValidation } from '@/composables/useValidation'
 import FormField from '@/components/ui/FormField.vue'
-import type { ContactPerson } from '@/stores/customerStore'
+import type { ContactPerson } from '@/storages/customerStorage'
 
 const emit = defineEmits<{
   'add-contact': [contact: Omit<ContactPerson, 'id' | 'customerId'>]

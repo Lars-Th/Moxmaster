@@ -388,7 +388,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { Plus, Mail, Trash2, Star, LayoutGrid, List, Edit } from 'lucide-vue-next'
-import type { ContactPerson } from '@/stores/customerStore'
+import type { ContactPerson } from '@/storages/customerStorage'
 import { useNotifications } from '@/composables/useNotifications'
 import { useValidation } from '@/composables/useValidation'
 import FormField from '@/components/ui/FormField.vue'

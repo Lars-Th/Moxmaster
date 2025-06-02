@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useCustomerStore } from '@/stores/customerStore'
-import { Button } from '@/components/ui/button'
+import { useCustomerStorage } from '@/storages/customerStorage'
 import { Plus } from 'lucide-vue-next'
 import StandardHeader from '@/components/custom/StandardHeader.vue'
 import ActionBar from '@/components/custom/ActionBar.vue'
@@ -15,7 +14,7 @@ interface BreadcrumbItem {
 }
 
 const router = useRouter()
-const customerStore = useCustomerStore()
+const customerStorage = useCustomerStorage()
 
 // Functional breadcrumbs
 const breadcrumbs: BreadcrumbItem[] = [
@@ -81,20 +80,20 @@ const actionButtons = [
 const stats = computed(() => [
   {
     label: 'Totalt kunder',
-    value: customerStore.totalCustomers.toString(),
+    value: customerStorage.totalCustomers.toString(),
     change: '+12%',
     trend: 'up' as const
   },
   {
     label: 'Aktiva kunder',
-    value: customerStore.activeCustomers.length.toString(),
+    value: customerStorage.activeCustomers.length.toString(),
     change: '+5%',
     trend: 'up' as const,
     color: 'text-green-600'
   },
   {
     label: 'Inaktiva kunder',
-    value: customerStore.inactiveCustomers.length.toString(),
+    value: customerStorage.inactiveCustomers.length.toString(),
     change: '-2%',
     trend: 'down' as const,
     color: 'text-orange-600'
@@ -121,7 +120,7 @@ const sendEmail = (customer: any, event: Event) => {
 }
 
 const deleteCustomer = (customer: any, event: Event) => {
-  customerStore.removeCustomer(customer.id)
+  customerStorage.removeCustomer(customer.id)
 }
 </script>
 
@@ -138,7 +137,7 @@ const deleteCustomer = (customer: any, event: Event) => {
 
     <!-- Data Table with Search and Filter Bar -->
     <DataTable
-      :data="customerStore.customers"
+      :data="customerStorage.customers"
       :columns="columns"
       :search-fields="['name', 'city', 'companyName']"
       filter-field="status"

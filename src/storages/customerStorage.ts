@@ -44,7 +44,7 @@ interface CustomerState {
   contactPersons: ContactPerson[]
 }
 
-export const useCustomerStore = defineStore('customer', {
+export const useCustomerStorage = defineStore('customer', {
   state: (): CustomerState => ({
     customers: customersData as Customer[],
     contactPersons: contactPersonsData as ContactPerson[]

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useWorkOrderStore, type WorkOrder, type WorkOrderTask } from '@/stores/workOrderStore'
-import { useCustomerStore } from '@/stores/customerStore'
+import { useWorkOrderStore, type WorkOrder, type WorkOrderTask } from '@/storages/workOrderStore'
+import { useCustomerStore } from '@/storages/customerStorage'
 import { useNotifications } from '@/composables/useNotifications'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'

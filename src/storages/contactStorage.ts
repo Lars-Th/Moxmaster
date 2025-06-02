@@ -16,7 +16,7 @@ interface ContactState {
   contacts: Contact[]
 }
 
-export const useContactStore = defineStore('contact', {
+export const useContactStorage = defineStore('contact', {
   state: (): ContactState => ({
     contacts: contactsData as Contact[],
   }),
