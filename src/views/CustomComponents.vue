@@ -16,24 +16,68 @@
           Det här är alla våra färdiga komponenter utifrån shadcn
         </h2>
         
-        <!-- Component list for direct navigation -->
-        <details class="text-sm text-gray-600 mb-4">
-          <summary class="cursor-pointer hover:text-gray-800">Component List</summary>
-          <ul class="mt-2 grid grid-cols-2 md:grid-cols-3 gap-1 max-w-2xl mx-auto">
-            <li 
-              v-for="(comp, index) in components" 
-              :key="index" 
-              :class="{ 
-                'font-bold text-blue-600': index + 1 === currentPage,
-                'text-gray-600 hover:text-blue-600': index + 1 !== currentPage
-              }"
-              class="cursor-pointer p-1 rounded hover:bg-gray-100 transition-colors"
-              @click="goToPage(index + 1)"
+        <!-- Component list - always visible -->
+        <div class="mb-4">
+          <h3 class="text-sm font-medium text-gray-700 mb-3">Component List</h3>
+          <div class="p-4 rounded-lg max-w-4xl mx-auto">
+            <ul class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+              <li 
+                v-for="(comp, index) in components" 
+                :key="index" 
+                :class="{ 
+                  'font-bold text-whit': index + 1 === currentPage,
+                  'text-gray-600 hover:text-blue-600 hover:bg-blue-50': index + 1 !== currentPage
+                }"
+                class="cursor-pointer p-2 rounded transition-colors text-sm"
+                @click="goToPage(index + 1)"
+              >
+                {{ index + 1 }}. {{ comp.name }}
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Pagination controls -->
+        <div class="flex items-center justify-center gap-2 mb-4">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            @click="previousPage"
+            :disabled="currentPage === 1"
+          >
+            <ChevronLeft class="h-4 w-4 mr-1" />
+            Previous
+          </Button>
+          
+          <div class="flex gap-1">
+            <Button
+              v-for="page in visiblePages"
+              :key="page"
+              variant="outline"
+              size="sm"
+              class="w-8 h-8"
+              :class="{ 'bg-primary text-primary-foreground': page === currentPage }"
+              @click="goToPage(page)"
             >
-              {{ index + 1 }}. {{ comp.name }}
-            </li>
-          </ul>
-        </details>
+              {{ page }}
+            </Button>
+          </div>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            @click="nextPage"
+            :disabled="currentPage === totalComponents"
+          >
+            Next
+            <ChevronRight class="h-4 w-4 ml-1" />
+          </Button>
+        </div>
+
+        <!-- Component counter -->
+        <div class="text-sm text-gray-500 mb-4">
+          Component {{ currentPage }} of {{ totalComponents }}
+        </div>
       </div>
 
       <!-- Debug info -->
@@ -70,49 +114,6 @@
 
       <div v-else class="text-center text-gray-500 py-8">
         <p>No component available for page {{ currentPage }}</p>
-      </div>
-
-      <!-- Simple pagination -->
-      <div class="flex items-center justify-between">
-        <div class="text-sm text-gray-500">
-          Component {{ currentPage }} of {{ totalComponents }}
-        </div>
-        
-        <div class="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            @click="previousPage"
-            :disabled="currentPage === 1"
-          >
-            <ChevronLeft class="h-4 w-4 mr-1" />
-            Previous
-          </Button>
-          
-          <div class="flex gap-1">
-            <Button
-              v-for="page in visiblePages"
-              :key="page"
-              variant="outline"
-              size="sm"
-              class="w-8 h-8"
-              :class="{ 'bg-primary text-primary-foreground': page === currentPage }"
-              @click="goToPage(page)"
-            >
-              {{ page }}
-            </Button>
-          </div>
-          
-          <Button 
-            variant="outline" 
-            size="sm" 
-            @click="nextPage"
-            :disabled="currentPage === totalComponents"
-          >
-            Next
-            <ChevronRight class="h-4 w-4 ml-1" />
-          </Button>
-        </div>
       </div>
     </div>
   </div>
