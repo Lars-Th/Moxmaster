@@ -9,7 +9,7 @@ import {
   generateId 
 } from './baseTypes'
 import customersData from './customers.json'
-import contactPersonsData from './contactPersons.json'
+import contactsData from './contacts.json'
 
 // =============================================================================
 // ENTITY INTERFACES
@@ -53,6 +53,31 @@ export interface ContactPerson extends BaseEntity {
 }
 
 // =============================================================================
+// DATA TRANSFORMATION
+// =============================================================================
+
+// Transform contacts.json data to ContactPerson format
+const transformContactsToContactPersons = (): ContactPerson[] => {
+  return contactsData.map((contact: any) => {
+    // Find customer by company name to get customerId
+    const customer = customersData.find((c: any) => c.companyName === contact.company)
+    
+    return {
+      id: contact.id,
+      name: contact.name,
+      title: 'Kontaktperson', // Default title since not in contacts.json
+      email: contact.email,
+      phone: contact.phone,
+      department: 'Allmän', // Default department since not in contacts.json
+      isMainContact: contact.isMainContact,
+      customerId: customer?.id || 1, // Fallback to customer 1 if not found
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+  })
+}
+
+// =============================================================================
 // STORE INTERFACES
 // =============================================================================
 
@@ -79,10 +104,10 @@ const RELATIONSHIPS = {
 // STORE DEFINITION
 // =============================================================================
 
-export const useImprovedCustomerStorage = defineStore('improvedCustomer', {
+export const useCustomerStorage = defineStore('Customer', {
   state: (): CustomerStoreState => ({
     customers: customersData as Customer[],
-    contactPersons: contactPersonsData as ContactPerson[],
+    contactPersons: transformContactsToContactPersons(),
     loading: false,
     error: null,
     lastUpdated: null
@@ -435,7 +460,7 @@ export const useImprovedCustomerStorage = defineStore('improvedCustomer', {
 
     resetStore() {
       this.customers = customersData as Customer[]
-      this.contactPersons = contactPersonsData as ContactPerson[]
+      this.contactPersons = transformContactsToContactPersons()
       this.loading = false
       this.error = null
       this.lastUpdated = null

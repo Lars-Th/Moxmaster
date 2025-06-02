@@ -2,14 +2,11 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useToast } from '@/composables/useToast'
 import { useNotifications } from '@/composables/useNotifications'
-import { useValidation } from '@/composables/useValidation'
 import { Building2, MapPin, Receipt } from 'lucide-vue-next'
 import StandardHeader from '@/components/custom/StandardHeader.vue'
-import ActionBar from '@/components/custom/ActionBar.vue'
 import StatusNotification from '@/components/custom/StatusNotification.vue'
-import { useImprovedCustomerStorage, type Customer, type ContactPerson } from '@/storages/improvedCustomerStorage'
+import { useCustomerStorage, type Customer, type ContactPerson } from '@/storages/CustomerStorage'
 
 // Import tab components
 import TabAllmant from '../components/custom/TabAllmant.vue'
@@ -28,10 +25,8 @@ interface BreadcrumbItem {
 
 const route = useRoute()
 const router = useRouter()
-const { success, error } = useToast()
 const { success: notificationSuccess, error: notificationError, confirm } = useNotifications()
-const { validateAll, validateField, touchField, clearErrors } = useValidation()
-const customerStore = useImprovedCustomerStorage()
+const customerStore = useCustomerStorage()
 
 // =============================================================================
 // REACTIVE DATA USING IMPROVED STORE
@@ -143,7 +138,6 @@ const saveChanges = async () => {
       if (result.success) {
         hasChanges.value = false
         showSaveConfirmation.value = true
-        clearErrors()
         notificationSuccess('Ändringarna sparade', 'Kunduppgifterna har uppdaterats framgångsrikt.')
         
         // Dölj bekräftelsen efter 4 sekunder
@@ -197,7 +191,7 @@ const handleFieldBlur = (fieldName: string) => {
 // CONTACT PERSON MANAGEMENT
 // =============================================================================
 
-const handleAddContact = async (contactData: Omit<ContactPerson, 'id' | 'customerId' | 'createdAt' | 'updatedAt'>) => {
+const handleAddContact = async (contactData: Omit<ContactPerson, 'id' | 'customerId'>) => {
   if (!customer.value) return
   
   try {

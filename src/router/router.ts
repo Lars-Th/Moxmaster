@@ -18,6 +18,7 @@ import Test from '@/views/Test.vue'
 import Customers from '@/views/Customers.vue'
 import CustomerDetails from '@/views/CustomerDetails.vue'
 import Contacts from '@/views/Contacts.vue'
+import ContactDetails from '@/views/ContactDetails.vue'
 import Prospector from '@/views/Prospector.vue'
 import CustomComponents from '@/views/CustomComponents.vue'
 import Machines from '@/views/Machines.vue'
@@ -37,6 +38,11 @@ const routeDefinitions = [
     path: '/customers/:id',
     name: 'customer-details',
     component: CustomerDetails
+  },
+  {
+    path: '/contacts/:id',
+    name: 'contact-details',
+    component: ContactDetails
   },
   // Main navigation section
   {
@@ -81,6 +87,12 @@ const routeDefinitions = [
     name: 'test',
     component: Test,
     navigation: { name: 'Test', icon: TestTube, section: 'bottom' }
+  },
+  {
+    path: '/custom-components',
+    name: 'custom-components',
+    component: CustomComponents,
+    navigation: { name: 'Custom Components', icon: Palette, section: 'bottom' }
   },
   {
     path: '/prospector',

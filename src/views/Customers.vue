@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useImprovedCustomerStorage } from '@/storages/improvedCustomerStorage'
+import { useCustomerStorage } from '@/storages/CustomerStorage'
 import { Plus } from 'lucide-vue-next'
 import StandardHeader from '@/components/custom/StandardHeader.vue'
 import ActionBar from '@/components/custom/ActionBar.vue'
@@ -14,7 +14,7 @@ interface BreadcrumbItem {
 }
 
 const router = useRouter()
-const customerStore = useImprovedCustomerStorage()
+const customerStore = useCustomerStorage()
 
 // =============================================================================
 // COMPUTED DATA USING IMPROVED STORE

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { useImprovedCustomerStorage } from '@/storages/improvedCustomerStorage'
+import { useCustomerStorage } from '@/storages/CustomerStorage'
 import { useProjectStorage } from '@/storages/projectStorage'
 
 // =============================================================================
@@ -9,7 +9,7 @@ import { useProjectStorage } from '@/storages/projectStorage'
 // =============================================================================
 
 const route = useRoute()
-const customerStore = useImprovedCustomerStorage()
+const customerStore = useCustomerStorage()
 const projectStore = useProjectStorage()
 
 // =============================================================================

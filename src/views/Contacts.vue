@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useImprovedCustomerStorage } from '@/storages/improvedCustomerStorage'
+import { useCustomerStorage } from '@/storages/CustomerStorage'
 import { Plus } from 'lucide-vue-next'
 import StandardHeader from '@/components/custom/StandardHeader.vue'
 import ActionBar from '@/components/custom/ActionBar.vue'
 import DataTable from '@/components/custom/DataTable.vue'
 
 const router = useRouter()
-const customerStore = useImprovedCustomerStorage()
+const customerStore = useCustomerStorage()
 
 // =============================================================================
 // COMPUTED DATA USING IMPROVED STORE
@@ -136,8 +136,8 @@ function addNewContact() {
 }
 
 async function viewContactDetails(contact: any) {
-  // Navigate to the customer details page where this contact belongs
-  router.push(`/customers/${contact.customerId}`)
+  // Navigate to the contact details page
+  router.push(`/contacts/${contact.id}`)
 }
 
 function sendEmail(contact: any) {

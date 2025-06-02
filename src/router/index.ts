@@ -3,6 +3,7 @@ import Dashboard from '@/views/Dashboard.vue'
 import Customers from '@/views/Customers.vue'
 import CustomerDetails from '@/views/CustomerDetails.vue'
 import Contacts from '@/views/Contacts.vue'
+import ContactDetails from '@/views/ContactDetails.vue'
 import WorkOrders from '@/views/WorkOrders.vue'
 import WorkOrderDetails from '@/views/WorkOrderDetails.vue'
 import Machines from '@/views/Machines.vue'
@@ -34,6 +35,11 @@ const router = createRouter({
       path: '/contacts',
       name: 'contacts',
       component: Contacts
+    },
+    {
+      path: '/contacts/:id',
+      name: 'contact-details',
+      component: ContactDetails
     },
     {
       path: '/work-orders',
