@@ -1,19 +1,36 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useContactStorage } from '@/storages/contactStorage'
+import { useImprovedCustomerStorage } from '@/storages/improvedCustomerStorage'
 import { Plus } from 'lucide-vue-next'
 import StandardHeader from '@/components/custom/StandardHeader.vue'
 import ActionBar from '@/components/custom/ActionBar.vue'
 import DataTable from '@/components/custom/DataTable.vue'
 
 const router = useRouter()
-const contactStorage = useContactStorage()
+const customerStore = useImprovedCustomerStorage()
+
+// =============================================================================
+// COMPUTED DATA USING IMPROVED STORE
+// =============================================================================
+
+// Get all contact persons with their customer information
+const allContactPersonsWithCustomers = computed(() => {
+  return customerStore.contactPersons.map(contact => {
+    const customer = customerStore.getCustomerById(contact.customerId)
+    return {
+      ...contact,
+      customerName: customer?.companyName || 'Okänd kund',
+      customerCity: customer?.city || '',
+      customerStatus: customer?.status || 'Okänd'
+    }
+  })
+})
 
 // Functional breadcrumbs
 const breadcrumbs = [
   { label: 'Home', to: '/' },
-  { label: `Kontaktpersoner (${contactStorage.totalContacts})`, isCurrentPage: true }
+  { label: `Kontaktpersoner (${customerStore.totalContactPersons})`, isCurrentPage: true }
 ]
 
 // Column configuration for the data table
@@ -24,13 +41,23 @@ const columns = [
     sortable: true
   },
   {
-    key: 'company',
+    key: 'title',
+    label: 'Titel',
+    sortable: true
+  },
+  {
+    key: 'customerName',
     label: 'Företag',
     sortable: true
   },
   {
     key: 'phone',
     label: 'Telefon',
+    sortable: false
+  },
+  {
+    key: 'email',
+    label: 'E-post',
     sortable: false
   },
   {
@@ -65,9 +92,9 @@ const actionButtons = [
   }
 ]
 
-// Transform contacts data to match filter expectations
+// Transform contact persons data for table display
 const transformedContacts = computed(() => {
-  return contactStorage.contacts.map(contact => ({
+  return allContactPersonsWithCustomers.value.map(contact => ({
     ...contact,
     // Transform isMainContact boolean to string for filtering
     isMainContactFilter: contact.isMainContact.toString(),
@@ -76,87 +103,232 @@ const transformedContacts = computed(() => {
   }))
 })
 
-// Stats for StandardHeader
+// =============================================================================
+// ENHANCED STATISTICS USING IMPROVED STORE
+// =============================================================================
+
 const stats = computed(() => [
   {
     label: 'Totalt kontakter',
-    value: contactStorage.totalContacts.toString(),
-    change: '+8%',
-    trend: 'up' as const
+    value: customerStore.totalContactPersons.toString()
   },
   {
     label: 'Huvudkontakter',
-    value: contactStorage.mainContacts.length.toString(),
-    change: '+3%',
-    trend: 'up' as const,
-    color: 'text-green-600'
+    value: customerStore.contactPersons.filter(cp => cp.isMainContact).length.toString()
   },
   {
-    label: 'Nya denna månad',
-    value: '12',
-    change: '+20%',
-    trend: 'up' as const
+    label: 'Kunder med kontakter',
+    value: new Set(customerStore.contactPersons.map(cp => cp.customerId)).size.toString()
   },
   {
-    label: 'Aktiva företag',
-    value: '45',
-    change: '+5%',
-    trend: 'up' as const,
-    color: 'text-blue-600'
+    label: 'Kunder utan huvudkontakt',
+    value: customerStore.customersWithoutMainContact.length.toString()
   }
 ])
 
-const viewContactDetails = (contact: any) => {
-  router.push(`/contacts/${contact.id}`)
-}
+// =============================================================================
+// ACTION METHODS
+// =============================================================================
 
 function addNewContact() {
-  // Här skulle vi navigera till en "lägg till kontakt" sida
-  console.log('Lägg till ny kontakt')
+  // TODO: Navigate to new contact form or open modal
+  console.log('Add new contact')
 }
 
-const sendEmail = (contact: any, event: Event) => {
+async function viewContactDetails(contact: any) {
+  // Navigate to the customer details page where this contact belongs
+  router.push(`/customers/${contact.customerId}`)
+}
+
+function sendEmail(contact: any) {
   window.location.href = `mailto:${contact.email}`
 }
 
-const deleteContact = (contact: any, event: Event) => {
-  contactStorage.removeContact(contact.id)
+async function deleteContact(contact: any) {
+  try {
+    const result = await customerStore.removeContactPerson(contact.id)
+    
+    if (result.success) {
+      console.log('Contact deleted successfully')
+    } else {
+      console.error('Failed to delete contact:', result.error)
+    }
+  } catch (error) {
+    console.error('Error deleting contact:', error)
+  }
 }
+
+// =============================================================================
+// ENHANCED FILTERING LOGIC
+// =============================================================================
+
+// Get contacts by department
+const contactsByDepartment = computed(() => {
+  const departments = new Map()
+  customerStore.contactPersons.forEach(contact => {
+    const dept = contact.department || 'Okänd'
+    if (!departments.has(dept)) {
+      departments.set(dept, [])
+    }
+    departments.get(dept).push(contact)
+  })
+  return departments
+})
+
+// Get customers missing main contacts
+const customersNeedingMainContact = computed(() => 
+  customerStore.customersWithoutMainContact
+)
 </script>
 
 <template>
   <div class="w-full">
-    <!-- Standard Header -->
-    <StandardHeader
-      title="Kontaktpersoner"
-      :breadcrumbs="breadcrumbs"
-      :show-stats="true"
-      :stats="stats"
-    />
+    <!-- Store Error Display -->
+    <div v-if="customerStore.error" class="mb-4 p-4 bg-red-50 border border-red-200 rounded">
+      <div class="text-red-800">{{ customerStore.error }}</div>
+      <button 
+        @click="customerStore.clearError()" 
+        class="mt-2 text-sm text-red-600 hover:text-red-800"
+      >
+        Stäng
+      </button>
+    </div>
 
-    <!-- Search and Filter Bar -->
-    <DataTable
-      :data="transformedContacts"
-      :columns="columns"
-      :search-fields="['name', 'company', 'phone']"
-      filter-field="isMainContactFilter"
-      :filter-options="filterOptions"
-      :on-row-click="viewContactDetails"
-      :on-send-email="sendEmail"
-      :on-delete="deleteContact"
-      delete-confirm-message="Är du säker på att du vill radera denna kontakt?"
-    >
-      <template #filters="{ searchQuery, statusFilter, filterOptions, updateSearchQuery, updateStatusFilter }">
-        <ActionBar
-          :action-buttons="actionButtons"
-          :search-query="searchQuery"
-          :status-filter="statusFilter"
-          search-placeholder="Sök på namn, företag eller telefon..."
-          :filter-options="filterOptions"
-          @update:search-query="updateSearchQuery"
-          @update:status-filter="updateStatusFilter"
-        />
-      </template>
-    </DataTable>
+    <!-- Loading State -->
+    <div v-if="customerStore.loading" class="text-center py-8">
+      <div class="text-gray-600">Laddar kontaktdata...</div>
+    </div>
+
+    <!-- Main Content -->
+    <div v-else>
+      <!-- Standard Header with Enhanced Statistics -->
+      <StandardHeader
+        title="Kontaktpersoner"
+        :breadcrumbs="breadcrumbs"
+        description="Hantera alla kontaktpersoner och deras företagsrelationer"
+        :show-stats="true"
+        :stats="stats"
+      />
+
+      <!-- Data Table with Search and Filter Bar -->
+      <DataTable
+        :data="transformedContacts"
+        :columns="columns"
+        :search-fields="['name', 'customerName', 'phone', 'email', 'title', 'department']"
+        filter-field="isMainContactFilter"
+        :filter-options="filterOptions"
+        :on-row-click="viewContactDetails"
+        :on-send-email="sendEmail"
+        :on-delete="deleteContact"
+        delete-confirm-message="Är du säker på att du vill radera denna kontaktperson?"
+      >
+        <template #filters="{ searchQuery, statusFilter, filterOptions, updateSearchQuery, updateStatusFilter }">
+          <ActionBar
+            :action-buttons="actionButtons"
+            :search-query="searchQuery"
+            :status-filter="statusFilter"
+            search-placeholder="Sök på namn, företag, telefon, e-post eller avdelning..."
+            :filter-options="filterOptions"
+            @update:search-query="updateSearchQuery"
+            @update:status-filter="updateStatusFilter"
+          />
+        </template>
+      </DataTable>
+
+      <!-- Additional Analysis Panels -->
+      <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 px-6">
+        <!-- Department Distribution -->
+        <div class="bg-white p-4 rounded-lg border">
+          <h3 class="text-sm font-medium text-gray-500 mb-3">Kontakter per avdelning</h3>
+          <div class="space-y-2">
+            <div 
+              v-for="[department, contacts] in contactsByDepartment" 
+              :key="department"
+              class="flex justify-between text-xs"
+            >
+              <span>{{ department }}:</span>
+              <span class="font-medium">{{ contacts.length }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Customers Missing Main Contact -->
+        <div class="bg-white p-4 rounded-lg border">
+          <h3 class="text-sm font-medium text-gray-500 mb-3">Kunder utan huvudkontakt</h3>
+          <div class="space-y-2 max-h-40 overflow-y-auto">
+            <div 
+              v-for="customer in customersNeedingMainContact" 
+              :key="customer.id"
+              class="text-xs"
+            >
+              <button 
+                @click="router.push(`/customers/${customer.id}`)"
+                class="text-red-600 hover:text-red-800 hover:underline"
+              >
+                {{ customer.companyName }}
+              </button>
+            </div>
+            <div v-if="customersNeedingMainContact.length === 0" class="text-xs text-gray-500">
+              Alla kunder har huvudkontakt
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="bg-white p-4 rounded-lg border">
+          <h3 class="text-sm font-medium text-gray-500 mb-3">Snabbåtgärder</h3>
+          <div class="space-y-2">
+            <button 
+              @click="customerStore.fetchContactPersons()"
+              :disabled="customerStore.loading"
+              class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded hover:bg-blue-200 disabled:opacity-50 block w-full"
+            >
+              Uppdatera kontaktdata
+            </button>
+            <button 
+              @click="router.push('/customers')"
+              class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded hover:bg-green-200 block w-full"
+            >
+              Visa kundlista
+            </button>
+            <button 
+              @click="customerStore.resetStore()"
+              class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded hover:bg-gray-200 block w-full"
+            >
+              Återställ filter
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Relationship Insights -->
+      <div class="mt-6 px-6">
+        <div class="bg-blue-50 p-4 rounded-lg">
+          <h3 class="text-sm font-semibold text-blue-900 mb-2">Relationsinformation</h3>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-blue-700">
+            <div>
+              <div class="font-medium">Genomsnittligt antal kontakter per kund:</div>
+              <div>{{ customerStore.totalCustomers > 0 ? (customerStore.totalContactPersons / customerStore.totalCustomers).toFixed(1) : '0' }}</div>
+            </div>
+            <div>
+              <div class="font-medium">Företag med flest kontakter:</div>
+              <div>{{ customerStore.customers.length > 0 ? customerStore.customers.reduce((max, customer) => {
+                const contactCount = customerStore.getContactPersonsByCustomerId(customer.id).length
+                const maxContactCount = customerStore.getContactPersonsByCustomerId(max.id).length
+                return contactCount > maxContactCount ? customer : max
+              }).companyName : 'Ingen' }}</div>
+            </div>
+            <div>
+              <div class="font-medium">Senast uppdaterad:</div>
+              <div>{{ customerStore.lastUpdated ? new Date(customerStore.lastUpdated).toLocaleDateString('sv-SE') : 'Okänd' }}</div>
+            </div>
+            <div>
+              <div class="font-medium">Aktiv datakvalitet:</div>
+              <div>{{ customerStore.customersWithoutMainContact.length === 0 ? '✅ Bra' : '⚠️ Behöver åtgärd' }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template> 

@@ -9,7 +9,7 @@ import { Building2, MapPin, Receipt } from 'lucide-vue-next'
 import StandardHeader from '@/components/custom/StandardHeader.vue'
 import ActionBar from '@/components/custom/ActionBar.vue'
 import StatusNotification from '@/components/custom/StatusNotification.vue'
-import { useCustomerStorage, type Customer } from '@/storages/customerStorage'
+import { useImprovedCustomerStorage, type Customer, type ContactPerson } from '@/storages/improvedCustomerStorage'
 
 // Import tab components
 import TabAllmant from '../components/custom/TabAllmant.vue'
@@ -30,12 +30,31 @@ const route = useRoute()
 const router = useRouter()
 const { success, error } = useToast()
 const { success: notificationSuccess, error: notificationError, confirm } = useNotifications()
-const { validateAll, validateField, touchField, hasError, getError, isRequired, clearErrors, allErrors } = useValidation()
-const customerStore = useCustomerStorage()
+const { validateAll, validateField, touchField, clearErrors } = useValidation()
+const customerStore = useImprovedCustomerStorage()
 
-// Get customer from store using computed to make it reactive
+// =============================================================================
+// REACTIVE DATA USING IMPROVED STORE
+// =============================================================================
+
+// Get customer with all related data using the enhanced getter
+const customerWithData = computed(() => {
+  const customerId = Number(route.params.id)
+  return customerStore.getCustomerWithContacts(customerId)
+})
+
+// Basic customer data
 const customer = computed(() => customerStore.getCustomerById(Number(route.params.id)))
-const contactPersons = computed(() => customerStore.getContactPersonsByCustomerId(Number(route.params.id)))
+
+// Contact persons for this customer
+const contactPersons = computed(() => 
+  customerStore.getContactPersonsByCustomerId(Number(route.params.id))
+)
+
+// Main contact for this customer
+const mainContact = computed(() => 
+  customerStore.getMainContactByCustomerId(Number(route.params.id))
+)
 
 // Functional breadcrumbs with customer name
 const breadcrumbs = computed((): BreadcrumbItem[] => [
@@ -49,13 +68,13 @@ const actionButtons = computed(() => [
   {
     label: 'Spara nu',
     onClick: saveChanges,
-    disabled: !hasChanges.value,
+    disabled: !hasChanges.value || customerStore.loading,
     class: 'text-xs h-8'
   },
   {
     label: 'Återställ',
     onClick: resetChanges,
-    disabled: !hasChanges.value,
+    disabled: !hasChanges.value || customerStore.loading,
     variant: 'outline' as const,
     class: 'text-xs h-8'
   },
@@ -71,40 +90,9 @@ const editedCustomer = ref<Customer | null>(customer.value ? { ...customer.value
 const hasChanges = ref(false)
 const showSaveConfirmation = ref(false)
 
-// Dialog för ny kontaktperson
-const showAddContactDialog = ref(false)
-const newContact = ref({
-  name: '',
-  title: '',
-  email: '',
-  phone: '',
-  department: '',
-  isMainContact: false
-})
-
-// Validation schema for customer data
-const validationSchema = {
-  companyName: {
-    rules: ['required'],
-    displayName: 'Företagsnamn'
-  },
-  organizationNumber: {
-    rules: ['organizationNumber'],
-    displayName: 'Organisationsnummer'
-  },
-  companyEmail: {
-    rules: ['email'],
-    displayName: 'E-postadress'
-  },
-  website: {
-    rules: ['website'],
-    displayName: 'Webbplats'
-  },
-  switchboardNumber: {
-    rules: ['phone'],
-    displayName: 'Växelnummer'
-  }
-}
+// =============================================================================
+// LIFECYCLE HOOKS
+// =============================================================================
 
 onMounted(() => {
   if (!customer.value) {
@@ -114,42 +102,62 @@ onMounted(() => {
   }
 })
 
+// =============================================================================
+// NAVIGATION METHODS
+// =============================================================================
+
 const goBack = () => {
   router.push('/customers')
 }
+
+// =============================================================================
+// CUSTOMER DATA MANAGEMENT
+// =============================================================================
 
 // Markera att data har ändrats
 const handleFieldChange = () => {
   hasChanges.value = true
 }
 
-const saveChanges = () => {
+const saveChanges = async () => {
   try {
     if (editedCustomer.value && customer.value) {
-      // Validate customer data
-      const isValid = validateAll(editedCustomer.value, validationSchema)
-      
-      if (!isValid) {
-        Object.keys(validationSchema).forEach(touchField)
-        notificationError('Valideringsfel', 'Kontrollera att alla fält är korrekt ifyllda innan du sparar.')
+      // Basic validation - check required fields
+      if (!editedCustomer.value.companyName || editedCustomer.value.companyName.trim() === '') {
+        notificationError('Valideringsfel', 'Företagsnamn är obligatoriskt.')
         return
       }
 
-      // Update customer in store
-      customerStore.updateCustomer(editedCustomer.value)
-      hasChanges.value = false
-      showSaveConfirmation.value = true
-      clearErrors()
+      // Optional: Basic email validation if email is provided
+      if (editedCustomer.value.companyEmail && editedCustomer.value.companyEmail.trim() !== '') {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!emailRegex.test(editedCustomer.value.companyEmail)) {
+          notificationError('Valideringsfel', 'E-postadress har felaktigt format.')
+          return
+        }
+      }
+
+      // Update customer using improved store
+      const result = await customerStore.updateCustomer(editedCustomer.value)
       
-      // Dölj bekräftelsen efter 4 sekunder
-      setTimeout(() => {
-        showSaveConfirmation.value = false
-      }, 4000)
+      if (result.success) {
+        hasChanges.value = false
+        showSaveConfirmation.value = true
+        clearErrors()
+        notificationSuccess('Ändringarna sparade', 'Kunduppgifterna har uppdaterats framgångsrikt.')
+        
+        // Dölj bekräftelsen efter 4 sekunder
+        setTimeout(() => {
+          showSaveConfirmation.value = false
+        }, 4000)
+      } else {
+        notificationError('Fel vid sparande', result.error || 'Kunde inte spara ändringarna.')
+      }
     }
   } catch (err) {
     notificationError(
       'Fel vid sparande',
-      'Kunde inte spara ändringarna. Försök igen.'
+      'Ett oväntat fel inträffade. Försök igen.'
     )
   }
 }
@@ -169,71 +177,57 @@ const resetChanges = () => {
 
 // Handle field blur for validation
 const handleFieldBlur = (fieldName: string) => {
-  if (editedCustomer.value && validationSchema[fieldName as keyof typeof validationSchema]) {
-    touchField(fieldName)
-    const config = validationSchema[fieldName as keyof typeof validationSchema]
-    validateField(
-      fieldName,
-      editedCustomer.value[fieldName as keyof typeof editedCustomer.value],
-      config.rules,
-      config.displayName
-    )
+  // Basic validation on blur for company name
+  if (fieldName === 'companyName' && editedCustomer.value) {
+    if (!editedCustomer.value.companyName || editedCustomer.value.companyName.trim() === '') {
+      // Field is empty, but we'll handle this in save validation
+    }
+  }
+  
+  // Basic email validation on blur
+  if (fieldName === 'companyEmail' && editedCustomer.value?.companyEmail) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(editedCustomer.value.companyEmail)) {
+      // Invalid email format, but we'll handle this in save validation
+    }
   }
 }
 
-// Kontaktperson funktioner
-const addContactPerson = () => {
-  showAddContactDialog.value = true
-}
+// =============================================================================
+// CONTACT PERSON MANAGEMENT
+// =============================================================================
 
-const saveNewContact = () => {
-  if (newContact.value.name && newContact.value.email && customer.value) {
-    // Add contact person to store
-    customerStore.addContactPerson({
-      ...newContact.value,
+const handleAddContact = async (contactData: Omit<ContactPerson, 'id' | 'customerId' | 'createdAt' | 'updatedAt'>) => {
+  if (!customer.value) return
+  
+  try {
+    // Add contact person using improved store
+    const result = await customerStore.addContactPerson({
+      ...contactData,
       customerId: customer.value.id
     })
     
-    // Om den nya kontakten ska vara huvudkontakt, sätt den som huvudkontakt
-    if (newContact.value.isMainContact) {
-      // Get the newly added contact (it will have the highest ID)
-      const allContacts = customerStore.getContactPersonsByCustomerId(customer.value.id)
-      const newContactId = Math.max(...allContacts.map(p => p.id))
-      customerStore.setMainContact(customer.value.id, newContactId)
+    if (result.success) {
+      // If this should be the main contact, set it as such
+      if (contactData.isMainContact && result.data) {
+        const mainContactResult = await customerStore.setMainContact(
+          customer.value.id, 
+          result.data.id
+        )
+        
+        if (mainContactResult.success) {
+          notificationSuccess('Kontaktperson tillagd', 'Den nya kontaktpersonen har lagts till och angetts som huvudkontakt.')
+        } else {
+          notificationSuccess('Kontaktperson tillagd', 'Den nya kontaktpersonen har lagts till, men kunde inte anges som huvudkontakt.')
+        }
+      } else {
+        notificationSuccess('Kontaktperson tillagd', 'Den nya kontaktpersonen har lagts till framgångsrikt.')
+      }
+    } else {
+      notificationError('Fel vid tillägg', result.error || 'Kunde inte lägga till kontaktperson.')
     }
-    
-    // Återställ formuläret
-    newContact.value = {
-      name: '',
-      title: '',
-      email: '',
-      phone: '',
-      department: '',
-      isMainContact: false
-    }
-    
-    showAddContactDialog.value = false
-    notificationSuccess('Kontaktperson tillagd', 'Den nya kontaktpersonen har lagts till framgångsrikt.')
-  }
-}
-
-const handleAddContact = (contact: any) => {
-  if (customer.value) {
-    // Add contact person to store
-    customerStore.addContactPerson({
-      ...contact,
-      customerId: customer.value.id
-    })
-    
-    // Om den nya kontakten ska vara huvudkontakt, sätt den som huvudkontakt
-    if (contact.isMainContact) {
-      // Get the newly added contact (it will have the highest ID)
-      const allContacts = customerStore.getContactPersonsByCustomerId(customer.value.id)
-      const newContactId = Math.max(...allContacts.map(p => p.id))
-      customerStore.setMainContact(customer.value.id, newContactId)
-    }
-    
-    notificationSuccess('Kontaktperson tillagd', 'Den nya kontaktpersonen har lagts till framgångsrikt.')
+  } catch (error) {
+    notificationError('Fel vid tillägg', 'Ett oväntat fel inträffade vid tillägg av kontaktperson.')
   }
 }
 
@@ -253,67 +247,136 @@ const handleDeleteContact = async (id: number, name: string) => {
   )
 
   if (confirmed) {
-    customerStore.removeContactPerson(id)
-    notificationSuccess('Kontaktperson borttagen', `${name} har tagits bort från kontaktlistan.`)
+    try {
+      const result = await customerStore.removeContactPerson(id)
+      
+      if (result.success) {
+        notificationSuccess('Kontaktperson borttagen', `${name} har tagits bort från kontaktlistan.`)
+      } else {
+        notificationError('Fel vid borttagning', result.error || 'Kunde inte ta bort kontaktperson.')
+      }
+    } catch (error) {
+      notificationError('Fel vid borttagning', 'Ett oväntat fel inträffade vid borttagning av kontaktperson.')
+    }
   }
 }
 
-const handleEditContact = (person: any) => {
-  // Navigera till en redigeringssida eller öppna en modal för redigering
-  // För nu loggar vi bara kontaktpersonen
+const handleEditContact = (person: ContactPerson) => {
+  // TODO: Implement contact editing functionality
   console.log('Edit contact:', person)
   notificationSuccess('Redigera kontaktperson', `Redigeringsfunktion för ${person.name} kommer snart.`)
+}
+
+const handleSetMainContact = async (contactId: number, contactName: string) => {
+  if (!customer.value) return
+  
+  try {
+    const result = await customerStore.setMainContact(customer.value.id, contactId)
+    
+    if (result.success) {
+      notificationSuccess('Huvudkontakt angiven', `${contactName} har angetts som huvudkontakt.`)
+    } else {
+      notificationError('Fel vid ändring', result.error || 'Kunde inte ange som huvudkontakt.')
+    }
+  } catch (error) {
+    notificationError('Fel vid ändring', 'Ett oväntat fel inträffade vid ändring av huvudkontakt.')
+  }
+}
+
+// =============================================================================
+// ERROR HANDLING
+// =============================================================================
+
+// Clear any store errors when component unmounts
+const clearStoreError = () => {
+  customerStore.clearError()
 }
 </script>
 
 <template>
   <div class="w-full">
-    <!-- Standard Header -->
-    <StandardHeader
-      title="Kunder"
-      :breadcrumbs="breadcrumbs"
-    />
+    <!-- Store Error Display -->
+    <div v-if="customerStore.error" class="mb-4">
+      <StatusNotification
+        type="error"
+        :title="customerStore.error"
+        message="Ett fel inträffade vid hantering av kunddata."
+        :show="true"
+        @close="clearStoreError"
+      />
+    </div>
 
-    <!-- Action Bar with customer-specific actions -->
-    <ActionBar :action-buttons="actionButtons" />
+    <!-- Loading State -->
+    <div v-if="customerStore.loading" class="text-center py-8">
+      <div class="text-gray-600">Laddar kunduppgifter...</div>
+    </div>
 
-    <!-- Varningsbox för osparade ändringar -->
-    <StatusNotification
-      v-if="hasChanges"
-      type="warning"
-      message="Osparade ändringar - Spara för att behålla ändringarna"
-    />
-    
-    <!-- Bekräftelsebox för sparade ändringar -->
-    <StatusNotification
-      v-if="showSaveConfirmation"
-      type="success"
-      message="Ändringar sparade! Företagsinformationen har uppdaterats framgångsrikt."
-    />
-    
-    <!-- Flikar för kunddetaljer -->
-    <div v-if="customer && editedCustomer" class="px-6 mt-6">
-      <Tabs default-value="general" class="w-full">
-        <TabsList class="grid w-full grid-cols-3 h-8">
-          <TabsTrigger value="general" class="flex items-center gap-1 text-xs h-7">
-            <Building2 class="h-3 w-3" />
+    <!-- Main Content -->
+    <div v-else-if="customer">
+      <!-- Standard Header with enhanced data -->
+      <StandardHeader
+        :title="customer.companyName"
+        :breadcrumbs="breadcrumbs"
+        :show-stats="true"
+        :stats="[
+          { label: 'Kontaktpersoner', value: contactPersons.length.toString() },
+          { label: 'Status', value: customer.status },
+          { label: 'Typ', value: customer.companyType }
+        ]"
+      />
+
+      <!-- Save confirmation -->
+      <StatusNotification
+        v-if="showSaveConfirmation"
+        type="success"
+        title="Ändringar sparade"
+        message="Kunduppgifterna har uppdaterats framgångsrikt."
+        :show="showSaveConfirmation"
+        @close="showSaveConfirmation = false"
+      />
+
+      <!-- Action Bar (Simple version for customer details) -->
+      <div class="flex justify-end gap-2 px-6 py-4">
+        <button
+          v-for="button in actionButtons"
+          :key="button.label"
+          :class="[
+            'px-4 py-2 rounded text-sm font-medium transition-colors',
+            button.variant === 'outline' 
+              ? 'border border-gray-300 text-gray-700 hover:bg-gray-50' 
+              : 'bg-blue-600 text-white hover:bg-blue-700',
+            button.disabled ? 'opacity-50 cursor-not-allowed' : '',
+            button.class || ''
+          ]"
+          :disabled="button.disabled"
+          @click="button.onClick"
+        >
+          {{ button.label }}
+        </button>
+      </div>
+
+      <!-- Customer Information Tabs -->
+      <Tabs default-value="general" class="w-full mt-6 p-6">
+        <TabsList class="grid w-full grid-cols-3">
+          <TabsTrigger value="general" class="flex items-center gap-2">
+            <Building2 class="h-4 w-4" />
             Allmänt
           </TabsTrigger>
-          <TabsTrigger value="visit-address" class="flex items-center gap-1 text-xs h-7">
-            <MapPin class="h-3 w-3" />
-            Besök
+          <TabsTrigger value="visit-address" class="flex items-center gap-2">
+            <MapPin class="h-4 w-4" />
+            Besöksadress
           </TabsTrigger>
-          <TabsTrigger value="billing-address" class="flex items-center gap-1 text-xs h-7">
-            <Receipt class="h-3 w-3" />
-            Faktura
+          <TabsTrigger value="billing-address" class="flex items-center gap-2">
+            <Receipt class="h-4 w-4" />
+            Faktureringsadress
           </TabsTrigger>
         </TabsList>
 
-        <!-- Allmän information flik -->
+        <!-- Allmänt flik -->
         <TabsContent value="general" class="mt-6">
           <TabAllmant 
+            v-if="editedCustomer"
             :edited-customer="editedCustomer" 
-            :errors="allErrors"
             @field-change="handleFieldChange"
             @field-blur="handleFieldBlur"
           />
@@ -322,6 +385,7 @@ const handleEditContact = (person: any) => {
         <!-- Besöksadress flik -->
         <TabsContent value="visit-address" class="mt-6">
           <TabBesok 
+            v-if="editedCustomer"
             :edited-customer="editedCustomer" 
             @field-change="handleFieldChange"
             @field-blur="handleFieldBlur"
@@ -331,6 +395,7 @@ const handleEditContact = (person: any) => {
         <!-- Faktureringsadress flik -->
         <TabsContent value="billing-address" class="mt-6">
           <TabFaktura 
+            v-if="editedCustomer"
             :edited-customer="editedCustomer" 
             @field-change="handleFieldChange"
             @field-blur="handleFieldBlur"
@@ -338,11 +403,19 @@ const handleEditContact = (person: any) => {
         </TabsContent>
       </Tabs>
 
-      <!-- Kontaktpersoner sektion -->
+      <!-- Contact Persons Section -->
       <div class="mt-12">
         <Separator class="mb-6" />
         <div class="flex items-center justify-between mb-6 px-6">
-          <h2 class="text-lg font-semibold">Kontaktpersoner</h2>
+          <div>
+            <h2 class="text-lg font-semibold">Kontaktpersoner</h2>
+            <p class="text-sm text-gray-600 mt-1">
+              {{ contactPersons.length }} kontaktperson(er)
+              <span v-if="mainContact" class="ml-2">
+                • Huvudkontakt: {{ mainContact.name }}
+              </span>
+            </p>
+          </div>
           <AddContactDialog @add-contact="handleAddContact" />
         </div>
         
@@ -352,9 +425,42 @@ const handleEditContact = (person: any) => {
             @delete-contact="handleDeleteContact"
             @send-email="handleSendEmail"
             @edit-contact="handleEditContact"
+            @set-main-contact="handleSetMainContact"
           />
         </TooltipProvider>
       </div>
+
+      <!-- Customer Statistics (Enhanced) -->
+      <div v-if="customerWithData" class="mt-8 p-4 bg-gray-50 rounded-lg">
+        <h3 class="font-semibold mb-2">Kundstatistik</h3>
+        <div class="grid grid-cols-3 gap-4 text-sm">
+          <div>
+            <span class="text-gray-600">Totalt antal kontakter:</span>
+            <span class="ml-2 font-medium">{{ customerWithData.contactCount }}</span>
+          </div>
+          <div>
+            <span class="text-gray-600">Har huvudkontakt:</span>
+            <span class="ml-2 font-medium">{{ customerWithData.mainContact ? 'Ja' : 'Nej' }}</span>
+          </div>
+          <div>
+            <span class="text-gray-600">Senast uppdaterad:</span>
+            <span class="ml-2 font-medium">
+              {{ customerStore.lastUpdated ? new Date(customerStore.lastUpdated).toLocaleDateString('sv-SE') : 'Okänd' }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Customer Not Found -->
+    <div v-else class="text-center py-8">
+      <div class="text-gray-600">Kunden kunde inte hittas.</div>
+      <button 
+        @click="goBack" 
+        class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+      >
+        Tillbaka till kundlista
+      </button>
     </div>
   </div>
 </template> 
