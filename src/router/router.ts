@@ -26,82 +26,95 @@ import WorkOrders from '@/views/WorkOrders.vue'
 
 // Single source of truth for routes and navigation
 const routeDefinitions = [
+  // Hidden/utility routes (no navigation)
   {
     path: '/',
-    name: 'custom-components',
-    component: CustomComponents,
-    navigation: { name: 'Egna Komponenter', icon: Palette }
-  },
-  {
-    path: '/dashboard',
     name: 'dashboard',
     component: Dashboard,
-    navigation: { name: 'Dashboard', icon: LayoutDashboard }
-  },
-  {
-    path: '/test',
-    name: 'test',
-    component: Test,
-    navigation: { name: 'Test', icon: TestTube }
-  },
-  {
-    path: '/customers',
-    name: 'customers',
-    component: Customers,
-    navigation: { name: 'Kunder', icon: Users }
+    redirect: '/dashboard'
   },
   {
     path: '/customers/:id',
     name: 'customer-details',
     component: CustomerDetails
-    // No navigation property means it won't appear in nav
+  },
+  // Main navigation section
+  {
+    path: '/dashboard',
+    name: 'dashboard-main',
+    component: Dashboard,
+    navigation: { name: 'Dashboard', icon: LayoutDashboard, section: 'main' }
+  },
+  {
+    path: '/customers',
+    name: 'customers',
+    component: Customers,
+    navigation: { name: 'Kunder', icon: Users, section: 'main' }
   },
   {
     path: '/contacts',
     name: 'contacts',
     component: Contacts,
-    navigation: { name: 'Kontaktpersoner', icon: UserCheck }
+    navigation: { name: 'Kontaktpersoner', icon: UserCheck, section: 'main' }
   },
   {
     path: '/machines',
     name: 'machines',
     component: Machines,
-    navigation: { name: 'Maskiner', icon: Wrench }
+    navigation: { name: 'Maskiner', icon: Wrench, section: 'main' }
   },
   {
     path: '/tools',
     name: 'tools',
     component: Tools,
-    navigation: { name: 'Verktyg', icon: Hammer }
+    navigation: { name: 'Verktyg', icon: Hammer, section: 'main' }
   },
   {
     path: '/work-orders',
     name: 'work-orders',
     component: WorkOrders,
-    navigation: { name: 'Arbetsorder', icon: FileText }
+    navigation: { name: 'Arbetsorder', icon: FileText, section: 'main' }
+  },
+  // Bottom navigation section
+  {
+    path: '/test',
+    name: 'test',
+    component: Test,
+    navigation: { name: 'Test', icon: TestTube, section: 'bottom' }
   },
   {
     path: '/prospector',
     name: 'prospector',
     component: Prospector,
-    navigation: { name: 'Prospector', icon: Search }
+    navigation: { name: 'Prospector', icon: Search, section: 'bottom' }
   },
   {
     path: '/settings',
     name: 'settings',
     component: Settings,
-    navigation: { name: 'Settings', icon: SettingsIcon }
+    navigation: { name: 'Settings', icon: SettingsIcon, section: 'bottom' }
   }
 ]
 
-// Derive navigationItems from routeDefinitions
-export const navigationItems = routeDefinitions
-  .filter(route => route.navigation)
+// Derive navigation items by section
+export const mainNavigationItems = routeDefinitions
+  .filter(route => route.navigation?.section === 'main')
   .map(route => ({
     name: route.navigation!.name,
     path: route.path,
     icon: route.navigation!.icon
   }))
+
+export const bottomNavigationItems = routeDefinitions
+  .filter(route => route.navigation?.section === 'bottom')
+  .map(route => ({
+    name: route.navigation!.name,
+    path: route.path,
+    icon: route.navigation!.icon
+  }))
+
+// Keep legacy export for compatibility
+export const navigationItems = [...mainNavigationItems, ...bottomNavigationItems]
 
 // Derive routes from routeDefinitions
 const routes = routeDefinitions.map(({ navigation, ...route }) => route)

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { RouterView, useRouter, useRoute } from 'vue-router'
-import { navigationItems } from '@/router/router'
+import { mainNavigationItems, bottomNavigationItems } from '@/router/router'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { 
@@ -86,10 +86,10 @@ onMounted(() => {
         <h1 class="text-xl font-semibold text-foreground">MoxMaster</h1>
       </div>
       
-      <!-- Navigation -->
+      <!-- Main Navigation Section -->
       <nav class="flex-1 p-4 space-y-1">
         <Button
-          v-for="item in navigationItems"
+          v-for="item in mainNavigationItems"
           :key="item.path"
           :variant="isActiveRoute(item.path) ? 'default' : 'ghost'"
           class="w-full justify-start gap-3 h-10"
@@ -100,13 +100,28 @@ onMounted(() => {
         </Button>
       </nav>
       
-      <!-- Theme Switcher -->
-      <div class="px-4 pb-2">
+      <!-- Bottom Navigation Section -->
+      <div class="p-4 space-y-1">
+        <Separator class="mb-3" />
+        
+        <!-- Bottom Navigation Items -->
+        <Button
+          v-for="item in bottomNavigationItems"
+          :key="item.path"
+          :variant="isActiveRoute(item.path) ? 'default' : 'ghost'"
+          class="w-full justify-start gap-3 h-10"
+          @click="navigateTo(item.path)"
+        >
+          <component :is="item.icon" class="h-4 w-4" />
+          {{ item.name }}
+        </Button>
+        
+        <!-- Theme Switcher -->
         <DropdownMenu>
           <DropdownMenuTrigger as-child>
             <Button variant="ghost" class="w-full justify-start gap-3 h-10">
               <Palette class="h-4 w-4" />
-              <span class="flex-1 text-left">{{ getCurrentThemeName }}</span>
+              <span class="flex-1 text-left">Themes</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" class="w-48">
