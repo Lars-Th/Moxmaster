@@ -5,18 +5,19 @@ import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Mail, Trash2, Star, Edit, ChevronUp, ChevronDown, ArrowUpDown } from 'lucide-vue-next'
-import type { ContactPerson } from '@/storages/customerStorage'
+import type { Contact } from '@/storages/contactStorage'
 
 interface Props {
-  contactPersons: ContactPerson[]
+  contactPersons: Contact[]
+  mainContact?: Contact | null
 }
 
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  'delete-contact': [id: number, name: string]
-  'send-email': [email: string]
-  'edit-contact': [person: ContactPerson]
+  'delete-contact': [id: number]
+  'update-contact': [contact: Contact]
+  'set-main-contact': [id: number]
 }>()
 
 // Sorting
@@ -28,8 +29,13 @@ const sortedData = computed(() => {
   if (!sortField.value) return props.contactPersons
   
   return [...props.contactPersons].sort((a, b) => {
-    const aValue = a[sortField.value as keyof ContactPerson]
-    const bValue = b[sortField.value as keyof ContactPerson]
+    const aValue = a[sortField.value as keyof Contact]
+    const bValue = b[sortField.value as keyof Contact]
+    
+    // Handle undefined/null values
+    if (aValue == null && bValue == null) return 0
+    if (aValue == null) return 1
+    if (bValue == null) return -1
     
     if (sortDirection.value === 'asc') {
       return aValue < bValue ? -1 : aValue > bValue ? 1 : 0
@@ -54,23 +60,25 @@ const getSortIcon = (field: string) => {
 }
 
 const sendEmail = (email: string) => {
-  emit('send-email', email)
+  if (email) {
+    window.location.href = `mailto:${email}`
+  }
 }
 
-const deleteContact = (id: number, name: string) => {
-  emit('delete-contact', id, name)
+const deleteContact = (id: number) => {
+  emit('delete-contact', id)
 }
 
-const editContact = (person: ContactPerson) => {
-  emit('edit-contact', person)
+const setMainContact = (id: number) => {
+  emit('set-main-contact', id)
 }
 
 // Column definitions
 const columns = [
   { key: 'name', label: 'Namn', sortable: true },
-  { key: 'title', label: 'Titel', sortable: true },
-  { key: 'department', label: 'Avdelning', sortable: true },
+  { key: 'email', label: 'E-post', sortable: true },
   { key: 'phone', label: 'Telefon', sortable: false },
+  { key: 'status', label: 'Status', sortable: true },
   { key: 'isMainContact', label: 'Huvudkontakt', sortable: true },
   { key: 'actions', label: 'Åtgärder', sortable: false }
 ]
@@ -116,14 +124,9 @@ const columns = [
             {{ person.name }}
           </TableCell>
           
-          <!-- Title -->
+          <!-- Email -->
           <TableCell class="text-xs">
-            {{ person.title || '-' }}
-          </TableCell>
-          
-          <!-- Department -->
-          <TableCell class="text-xs">
-            {{ person.department || '-' }}
+            {{ person.email || '-' }}
           </TableCell>
           
           <!-- Phone -->
@@ -141,17 +144,39 @@ const columns = [
             <span v-else class="text-gray-500">-</span>
           </TableCell>
           
+          <!-- Status -->
+          <TableCell class="text-xs">
+            {{ person.status || '-' }}
+          </TableCell>
+          
           <!-- Main Contact -->
           <TableCell class="text-xs">
-            <Badge 
-              v-if="person.isMainContact" 
-              variant="secondary" 
-              class="text-xs px-2 py-0 bg-green-100 text-green-700 border border-green-200"
-            >
-              <Star class="h-3 w-3 mr-1 text-green-600 fill-green-600" />
-              Ja
-            </Badge>
-            <span v-else class="text-xs text-gray-500">-</span>
+            <div class="flex items-center justify-between">
+              <Badge 
+                v-if="person.isMainContact" 
+                variant="secondary" 
+                class="text-xs px-2 py-0 bg-green-100 text-green-700 border border-green-200"
+              >
+                <Star class="h-3 w-3 mr-1 text-green-600 fill-green-600" />
+                Ja
+              </Badge>
+              <span v-else class="text-xs text-gray-500">-</span>
+              
+              <!-- Set as main contact button -->
+              <Tooltip v-if="!person.isMainContact">
+                <TooltipTrigger asChild>
+                  <button
+                    @click="setMainContact(person.id)"
+                    class="p-1 text-yellow-600 hover:text-yellow-800 ml-2"
+                  >
+                    <Star class="h-3 w-3" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Ange som huvudkontakt</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </TableCell>
           
           <!-- Actions -->
@@ -160,22 +185,9 @@ const columns = [
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
-                    @click="editContact(person)"
-                    class="p-1 text-green-600 hover:text-green-800"
-                  >
-                    <Edit class="h-4 w-4" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Ändra {{ person.name }}</p>
-                </TooltipContent>
-              </Tooltip>
-              
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
                     @click="sendEmail(person.email)"
                     class="p-1 text-blue-600 hover:text-blue-800"
+                    :disabled="!person.email"
                   >
                     <Mail class="h-4 w-4" />
                   </button>
@@ -198,22 +210,23 @@ const columns = [
                       </button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>{{ person.isMainContact ? 'Kan inte ta bort huvudkontakt' : `Ta bort ${person.name}` }}</p>
+                      <p v-if="person.isMainContact">Huvudkontakt kan inte tas bort</p>
+                      <p v-else>Ta bort {{ person.name }}</p>
                     </TooltipContent>
                   </Tooltip>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Ta bort kontaktperson</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Är du säker på att du vill ta bort {{ person.name }} från kontaktlistan? 
+                    <AlertDialogTitle class="text-base">Bekräfta borttagning</AlertDialogTitle>
+                    <AlertDialogDescription class="text-sm">
+                      Är du säker på att du vill ta bort kontaktpersonen {{ person.name }}? 
                       Denna åtgärd kan inte ångras.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel class="text-xs h-8">Avbryt</AlertDialogCancel>
                     <AlertDialogAction 
-                      @click="deleteContact(person.id, person.name)"
+                      @click="deleteContact(person.id)"
                       class="text-xs h-8 bg-red-600 hover:bg-red-700"
                     >
                       Ta bort

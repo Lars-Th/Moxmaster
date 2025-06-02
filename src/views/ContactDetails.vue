@@ -9,6 +9,8 @@ import StatusNotification from '@/components/custom/StatusNotification.vue'
 import { useCustomerStorage, type Customer } from '@/storages/CustomerStorage'
 import { useContactStorage, type Contact } from '@/storages/contactStorage'
 import { Separator } from '@/components/ui/separator'
+import ContactPersonsTable from '../components/custom/ContactPersonsTable.vue'
+import { TooltipProvider } from '@/components/ui/tooltip'
 
 interface BreadcrumbItem {
   label: string
@@ -39,7 +41,7 @@ const customer = computed(() => {
 const relatedContacts = computed(() => {
   if (!contact.value) return []
   return contactStore.getContactsByCustomerId(contact.value.customerId)
-    .filter(c => c.id !== contact.value!.id)
+    .filter(c => c.id !== contact.value?.id)
 })
 
 // Get main contact for this customer
@@ -232,6 +234,54 @@ const deleteContact = async () => {
 }
 
 // =============================================================================
+// CONTACT TABLE HANDLERS
+// =============================================================================
+
+const handleUpdateRelatedContact = async (contactData: Contact) => {
+  try {
+    const result = await contactStore.updateContact(contactData)
+    
+    if (result.success) {
+      notificationSuccess('Kontakt uppdaterad', 'Kontaktpersonen har uppdaterats framgångsrikt.')
+    } else {
+      notificationError('Fel vid uppdatering', result.error || 'Kunde inte uppdatera kontaktpersonen.')
+    }
+  } catch (err) {
+    notificationError('Fel vid uppdatering', 'Ett oväntat fel inträffade. Försök igen.')
+  }
+}
+
+const handleDeleteRelatedContact = async (contactId: number) => {
+  try {
+    const result = await contactStore.removeContact(contactId)
+    
+    if (result.success) {
+      notificationSuccess('Kontakt borttagen', 'Kontaktpersonen har tagits bort framgångsrikt.')
+    } else {
+      notificationError('Fel vid borttagning', result.error || 'Kunde inte ta bort kontaktpersonen.')
+    }
+  } catch (err) {
+    notificationError('Fel vid borttagning', 'Ett oväntat fel inträffade. Försök igen.')
+  }
+}
+
+const handleSetMainContactForRelated = async (contactId: number) => {
+  if (!customer.value) return
+  
+  try {
+    const result = await contactStore.setMainContact(customer.value.id, contactId)
+    
+    if (result.success) {
+      notificationSuccess('Huvudkontakt angiven', 'Huvudkontakten har uppdaterats framgångsrikt.')
+    } else {
+      notificationError('Fel vid uppdatering', result.error || 'Kunde inte ange huvudkontakt.')
+    }
+  } catch (err) {
+    notificationError('Fel vid uppdatering', 'Ett oväntat fel inträffade. Försök igen.')
+  }
+}
+
+// =============================================================================
 // COMPUTED PROPERTIES FOR DISPLAY
 // =============================================================================
 
@@ -322,7 +372,7 @@ watch(contact, (newContact) => {
       <!-- Main Content Tabs -->
       <div class="px-6">
         <Tabs default-value="general" class="w-full">
-          <TabsList class="grid w-full grid-cols-3">
+          <TabsList class="grid w-full grid-cols-2">
             <TabsTrigger value="general">
               <User class="w-4 h-4 mr-2" />
               Allmänt
@@ -330,10 +380,6 @@ watch(contact, (newContact) => {
             <TabsTrigger value="company">
               <Building2 class="w-4 h-4 mr-2" />
               Företag
-            </TabsTrigger>
-            <TabsTrigger value="related">
-              <Mail class="w-4 h-4 mr-2" />
-              Relaterat
             </TabsTrigger>
           </TabsList>
 
@@ -476,53 +522,6 @@ watch(contact, (newContact) => {
                 Företagsinformation kunde inte laddas.
               </div>
             </div>
-          </TabsContent>
-
-          <!-- Related Tab -->
-          <TabsContent value="related" class="space-y-6">
-            <div class="bg-white p-6 rounded-lg border">
-              <h3 class="text-lg font-semibold mb-4">Relaterade kontakter</h3>
-              
-              <div v-if="relatedContacts.length > 0" class="space-y-3">
-                <div 
-                  v-for="relatedContact in relatedContacts" 
-                  :key="relatedContact.id"
-                  class="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                >
-                  <div class="flex items-center space-x-3">
-                    <User class="w-5 h-5 text-gray-400" />
-                    <div>
-                      <div class="font-medium">{{ relatedContact.name }}</div>
-                      <div class="text-sm text-gray-500">
-                        {{ relatedContact.email }} • {{ relatedContact.phone }}
-                      </div>
-                      <div class="text-xs text-gray-400">
-                        {{ relatedContact.isMainContact ? 'Huvudkontakt' : 'Kontakt' }}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div class="flex space-x-2">
-                    <button
-                      @click="router.push(`/contacts/${relatedContact.id}`)"
-                      class="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
-                    >
-                      Visa
-                    </button>
-                    <button
-                      @click="() => { (window as any).location.href = `mailto:${relatedContact.email}` }"
-                      class="px-3 py-1 text-xs bg-green-100 text-green-800 rounded hover:bg-green-200"
-                    >
-                      E-post
-                    </button>
-                  </div>
-                </div>
-              </div>
-              
-              <div v-else class="text-gray-500 text-center py-8">
-                Inga andra kontakter för detta företag.
-              </div>
-            </div>
 
             <!-- Quick Actions -->
             <div class="bg-white p-6 rounded-lg border">
@@ -530,7 +529,7 @@ watch(contact, (newContact) => {
               
               <div class="flex flex-wrap gap-3">
                 <button
-                  v-if="!contact.isMainContact"
+                  v-if="contact && !contact.isMainContact"
                   @click="setAsMainContact"
                   class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
                 >
@@ -538,6 +537,7 @@ watch(contact, (newContact) => {
                 </button>
                 
                 <button
+                  v-if="contact"
                   @click="() => { (window as any).location.href = `mailto:${contact.email}` }"
                   class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
                 >
@@ -545,6 +545,7 @@ watch(contact, (newContact) => {
                 </button>
                 
                 <button
+                  v-if="contact"
                   @click="() => { (window as any).location.href = `tel:${contact.phone}` }"
                   class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm"
                 >
@@ -561,6 +562,29 @@ watch(contact, (newContact) => {
             </div>
           </TabsContent>
         </Tabs>
+      </div>
+
+      <!-- Related Contacts Section - Always Visible -->
+      <div class="mt-8 bg-white border-t">
+        <div class="px-6 py-6">
+          <h3 class="text-lg font-semibold mb-4">Relaterade kontakter</h3>
+          
+          <div v-if="relatedContacts.length > 0">
+            <TooltipProvider>
+              <ContactPersonsTable
+                :contact-persons="relatedContacts"
+                :main-contact="customerMainContact"
+                @update-contact="handleUpdateRelatedContact"
+                @delete-contact="handleDeleteRelatedContact"
+                @set-main-contact="handleSetMainContactForRelated"
+              />
+            </TooltipProvider>
+          </div>
+          
+          <div v-else class="text-gray-500 text-center py-8">
+            Inga andra kontakter för detta företag.
+          </div>
+        </div>
       </div>
     </div>
   </div>
