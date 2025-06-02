@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCustomerStorage } from '@/storages/CustomerStorage'
+import { useContactStorage } from '@/storages/contactStorage'
 import { Plus } from 'lucide-vue-next'
 import StandardHeader from '@/components/custom/StandardHeader.vue'
 import ActionBar from '@/components/custom/ActionBar.vue'
@@ -15,14 +16,28 @@ interface BreadcrumbItem {
 
 const router = useRouter()
 const customerStore = useCustomerStorage()
+const contactStore = useContactStorage()
 
 // =============================================================================
-// COMPUTED DATA USING IMPROVED STORE
+// COMPUTED DATA USING SEPARATED STORES
 // =============================================================================
 
-// Enhanced customer data with relationship information
-const customersWithMainContacts = computed(() => 
-  customerStore.getAllCustomersWithMainContact
+// Enhanced customer data with contact information from contact store
+const customersWithContactInfo = computed(() => 
+  customerStore.customers.map(customer => {
+    const mainContact = contactStore.getMainContactByCustomerId(customer.id)
+    const contactCount = contactStore.getContactCountByCustomerId(customer.id)
+    
+    return {
+      ...customer,
+      mainContact,
+      contactCount,
+      // Derived contact information from main contact
+      name: mainContact?.name || '',
+      phone: mainContact?.phone || '',
+      email: mainContact?.email || ''
+    }
+  })
 )
 
 // Functional breadcrumbs
@@ -92,7 +107,7 @@ const actionButtons = [
 ]
 
 // =============================================================================
-// ENHANCED STATISTICS USING IMPROVED STORE
+// ENHANCED STATISTICS USING SEPARATED STORES
 // =============================================================================
 
 const stats = computed(() => [
@@ -106,11 +121,11 @@ const stats = computed(() => [
   },
   { 
     label: 'Utan huvudkontakt', 
-    value: customerStore.customersWithoutMainContact.length.toString() 
+    value: customersWithContactInfo.value.filter(c => !c.mainContact).length.toString() 
   },
   {
     label: 'Kontaktpersoner totalt', 
-    value: customerStore.totalContactPersons.toString() 
+    value: contactStore.totalContacts.toString() 
   }
 ])
 
@@ -151,11 +166,7 @@ async function deleteCustomer(customer: any) {
 
 // Transform the enhanced customer data for the table
 const tableData = computed(() => {
-  return customersWithMainContacts.value.map(customer => ({
-    ...customer,
-    // Add contact count
-    contactCount: customerStore.getContactPersonsByCustomerId(customer.id).length
-  }))
+  return customersWithContactInfo.value
 })
 </script>
 
@@ -252,10 +263,10 @@ const tableData = computed(() => {
           <h3 class="text-sm font-medium text-gray-500">Kvalitetsmått</h3>
           <div class="mt-2 space-y-1">
             <div class="text-xs">
-              Med huvudkontakt: {{ (customerStore.totalCustomers - customerStore.customersWithoutMainContact.length) }}
+              Med huvudkontakt: {{ (customerStore.totalCustomers - customersWithContactInfo.filter(c => !c.mainContact).length) }}
             </div>
             <div class="text-xs text-red-600">
-              Utan huvudkontakt: {{ customerStore.customersWithoutMainContact.length }}
+              Utan huvudkontakt: {{ customersWithContactInfo.filter(c => !c.mainContact).length }}
             </div>
           </div>
         </div>

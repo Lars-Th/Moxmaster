@@ -8,7 +8,6 @@ import StandardHeader from '@/components/custom/StandardHeader.vue'
 import StatusNotification from '@/components/custom/StatusNotification.vue'
 import { useCustomerStorage, type Customer, type ContactPerson } from '@/storages/CustomerStorage'
 import { Separator } from '@/components/ui/separator'
-import { TooltipProvider } from '@/components/ui/tooltip'
 
 interface BreadcrumbItem {
   label: string
