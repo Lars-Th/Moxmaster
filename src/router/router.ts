@@ -10,7 +10,10 @@ import {
   Palette,
   Wrench,
   Hammer,
-  FileText
+  FileText,
+  User,
+  Shield,
+  UserCog
 } from 'lucide-vue-next'
 import Dashboard from '@/views/Dashboard.vue'
 import Settings from '@/views/Settings.vue'
@@ -24,6 +27,9 @@ import CustomComponents from '@/views/CustomComponents.vue'
 import Machines from '@/views/Machines.vue'
 import Tools from '@/views/Tools.vue'
 import WorkOrders from '@/views/WorkOrders.vue'
+import MyAccount from '@/views/MyAccount.vue'
+import LoginAccounts from '@/views/LoginAccounts.vue'
+import PermissionGroups from '@/views/PermissionGroups.vue'
 
 // Single source of truth for routes and navigation
 const routeDefinitions = [
@@ -83,6 +89,27 @@ const routeDefinitions = [
   },
   // Bottom navigation section
   {
+    path: '/settings',
+    name: 'settings',
+    component: Settings,
+    navigation: { 
+      name: 'Inställningar', 
+      icon: SettingsIcon, 
+      section: 'bottom',
+      dropdown: [
+        {
+          name: 'Användare',
+          icon: Users,
+          children: [
+            { name: 'Mitt Konto', path: '/settings/my-account', icon: User },
+            { name: 'Inloggningskonton', path: '/settings/login-accounts', icon: UserCog },
+            { name: 'Behörighetsgrupper', path: '/settings/permission-groups', icon: Shield }
+          ]
+        }
+      ]
+    }
+  },
+  {
     path: '/test',
     name: 'test',
     component: Test,
@@ -100,11 +127,21 @@ const routeDefinitions = [
     component: Prospector,
     navigation: { name: 'Prospector', icon: Search, section: 'bottom' }
   },
+  // Settings sub-routes
   {
-    path: '/settings',
-    name: 'settings',
-    component: Settings,
-    navigation: { name: 'Settings', icon: SettingsIcon, section: 'bottom' }
+    path: '/settings/my-account',
+    name: 'my-account',
+    component: MyAccount
+  },
+  {
+    path: '/settings/login-accounts',
+    name: 'login-accounts',
+    component: LoginAccounts
+  },
+  {
+    path: '/settings/permission-groups',
+    name: 'permission-groups',
+    component: PermissionGroups
   }
 ]
 
@@ -122,14 +159,15 @@ export const bottomNavigationItems = routeDefinitions
   .map(route => ({
     name: route.navigation!.name,
     path: route.path,
-    icon: route.navigation!.icon
+    icon: route.navigation!.icon,
+    dropdown: route.navigation!.dropdown
   }))
 
 // Keep legacy export for compatibility
 export const navigationItems = [...mainNavigationItems, ...bottomNavigationItems]
 
-// Derive routes from routeDefinitions
-const routes = routeDefinitions.map(({ navigation, ...route }) => route)
+// Derive routes from routeDefinitions (remove navigation property for router)
+const routes = routeDefinitions.map(({ navigation, ...route }) => route) as any[]
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),

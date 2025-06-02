@@ -105,16 +105,49 @@ onMounted(() => {
         <Separator class="mb-3" />
         
         <!-- Bottom Navigation Items -->
-        <Button
-          v-for="item in bottomNavigationItems"
-          :key="item.path"
-          :variant="isActiveRoute(item.path) ? 'default' : 'ghost'"
-          class="w-full justify-start gap-3 h-10"
-          @click="navigateTo(item.path)"
-        >
-          <component :is="item.icon" class="h-4 w-4" />
-          {{ item.name }}
-        </Button>
+        <template v-for="item in bottomNavigationItems" :key="item.path">
+          <!-- Regular navigation item without dropdown -->
+          <Button
+            v-if="!item.dropdown"
+            :variant="isActiveRoute(item.path) ? 'default' : 'ghost'"
+            class="w-full justify-start gap-3 h-10"
+            @click="navigateTo(item.path)"
+          >
+            <component :is="item.icon" class="h-4 w-4" />
+            {{ item.name }}
+          </Button>
+
+          <!-- Dropdown navigation item -->
+          <DropdownMenu v-else>
+            <DropdownMenuTrigger as-child>
+              <Button 
+                variant="ghost" 
+                class="w-full justify-start gap-3 h-10"
+              >
+                <component :is="item.icon" class="h-4 w-4" />
+                <span class="flex-1 text-left">{{ item.name }}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" class="w-56">
+              <template v-for="section in item.dropdown" :key="section.name">
+                <DropdownMenuLabel class="flex items-center gap-2">
+                  <component :is="section.icon" class="h-4 w-4" />
+                  {{ section.name }}
+                </DropdownMenuLabel>
+                <template v-for="child in section.children" :key="child.path">
+                  <DropdownMenuItem
+                    @click="navigateTo(child.path)"
+                    class="cursor-pointer pl-6"
+                  >
+                    <component :is="child.icon" class="mr-2 h-4 w-4" />
+                    {{ child.name }}
+                  </DropdownMenuItem>
+                </template>
+                <DropdownMenuSeparator v-if="item.dropdown.indexOf(section) < item.dropdown.length - 1" />
+              </template>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </template>
       
       <!-- Theme Switcher -->
         <DropdownMenu>
