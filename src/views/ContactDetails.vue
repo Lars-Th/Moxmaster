@@ -562,6 +562,33 @@ watch(contact, (newContact) => {
             </div>
           </TabsContent>
         </Tabs>
+
+        <!-- Save Actions Bar - Always Visible -->
+        <div v-if="hasChanges" class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <div class="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+              <span class="text-sm font-medium text-yellow-800">Du har osparade ändringar</span>
+            </div>
+            <div class="flex space-x-3">
+              <button
+                @click="resetChanges"
+                :disabled="contactStore.loading"
+                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                Återställ
+              </button>
+              <button
+                @click="saveChanges"
+                :disabled="contactStore.loading"
+                class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              >
+                <span v-if="contactStore.loading">Sparar...</span>
+                <span v-else>Spara ändringar</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Related Contacts Section - Always Visible -->
