@@ -202,38 +202,38 @@ const customersNeedingMainContact = computed(() =>
     <!-- Main Content -->
     <div v-else>
       <!-- Standard Header with Enhanced Statistics -->
-      <StandardHeader
-        title="Kontaktpersoner"
-        :breadcrumbs="breadcrumbs"
+    <StandardHeader
+      title="Kontaktpersoner"
+      :breadcrumbs="breadcrumbs"
         description="Hantera alla kontaktpersoner och deras företagsrelationer"
-        :show-stats="true"
-        :stats="stats"
-      />
+      :show-stats="true"
+      :stats="stats"
+    />
 
       <!-- Data Table with Search and Filter Bar -->
-      <DataTable
-        :data="transformedContacts"
-        :columns="columns"
+    <DataTable
+      :data="transformedContacts"
+      :columns="columns"
         :search-fields="['name', 'customerName', 'phone', 'email', 'title', 'department']"
-        filter-field="isMainContactFilter"
-        :filter-options="filterOptions"
-        :on-row-click="viewContactDetails"
-        :on-send-email="sendEmail"
-        :on-delete="deleteContact"
+      filter-field="isMainContactFilter"
+      :filter-options="filterOptions"
+      :on-row-click="viewContactDetails"
+      :on-send-email="sendEmail"
+      :on-delete="deleteContact"
         delete-confirm-message="Är du säker på att du vill radera denna kontaktperson?"
-      >
-        <template #filters="{ searchQuery, statusFilter, filterOptions, updateSearchQuery, updateStatusFilter }">
-          <ActionBar
-            :action-buttons="actionButtons"
-            :search-query="searchQuery"
-            :status-filter="statusFilter"
+    >
+      <template #filters="{ searchQuery, statusFilter, filterOptions, updateSearchQuery, updateStatusFilter }">
+        <ActionBar
+          :action-buttons="actionButtons"
+          :search-query="searchQuery"
+          :status-filter="statusFilter"
             search-placeholder="Sök på namn, företag, telefon, e-post eller avdelning..."
-            :filter-options="filterOptions"
-            @update:search-query="updateSearchQuery"
-            @update:status-filter="updateStatusFilter"
-          />
-        </template>
-      </DataTable>
+          :filter-options="filterOptions"
+          @update:search-query="updateSearchQuery"
+          @update:status-filter="updateStatusFilter"
+        />
+      </template>
+    </DataTable>
 
       <!-- Additional Analysis Panels -->
       <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 px-6">

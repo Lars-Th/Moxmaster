@@ -61,9 +61,9 @@ const columns = [
     badgeVariant: (status: string) => status === 'Aktiv' ? 'default' : 'secondary'
   },
   {
-    key: 'mainContact',
-    label: 'Huvudkontakt',
-    sortable: false,
+    key: 'contactCount',
+    label: 'Kontaktpersoner',
+    sortable: true,
     type: 'custom' as const
   },
   {
@@ -96,19 +96,19 @@ const actionButtons = [
 // =============================================================================
 
 const stats = computed(() => [
-  { 
+  {
     label: 'Totalt antal kunder', 
     value: customerStore.totalCustomers.toString() 
   },
-  { 
-    label: 'Aktiva kunder', 
+  {
+    label: 'Aktiva kunder',
     value: customerStore.activeCustomers.length.toString() 
   },
   { 
     label: 'Utan huvudkontakt', 
     value: customerStore.customersWithoutMainContact.length.toString() 
   },
-  { 
+  {
     label: 'Kontaktpersoner totalt', 
     value: customerStore.totalContactPersons.toString() 
   }
@@ -153,11 +153,6 @@ async function deleteCustomer(customer: any) {
 const tableData = computed(() => {
   return customersWithMainContacts.value.map(customer => ({
     ...customer,
-    // Override the mainContact object with just the name for table display
-    mainContact: customer.mainContact?.name || 'Ingen',
-    // Add additional fields for the custom template
-    mainContactName: customer.mainContact?.name || 'Ingen',
-    mainContactEmail: customer.mainContact?.email || '',
     // Add contact count
     contactCount: customerStore.getContactPersonsByCustomerId(customer.id).length
   }))
@@ -185,51 +180,48 @@ const tableData = computed(() => {
     <!-- Main Content -->
     <div v-else>
       <!-- Standard Header with Enhanced Statistics -->
-      <StandardHeader
-        title="Kunder"
-        :breadcrumbs="breadcrumbs"
+    <StandardHeader
+      title="Kunder"
+      :breadcrumbs="breadcrumbs"
         description="Hantera och visa all kundinformation"
-        :show-stats="true"
-        :stats="stats"
-      />
+      :show-stats="true"
+      :stats="stats"
+    />
 
-      <!-- Data Table with Search and Filter Bar -->
-      <DataTable
+    <!-- Data Table with Search and Filter Bar -->
+    <DataTable
         :data="tableData"
-        :columns="columns"
-        :search-fields="['name', 'city', 'companyName', 'mainContactName']"
-        filter-field="status"
-        :filter-options="filterOptions"
-        :on-row-click="viewCustomerDetails"
-        :on-send-email="sendEmail"
-        :on-delete="deleteCustomer"
+      :columns="columns"
+        :search-fields="['name', 'city', 'companyName']"
+      filter-field="status"
+      :filter-options="filterOptions"
+      :on-row-click="viewCustomerDetails"
+      :on-send-email="sendEmail"
+      :on-delete="deleteCustomer"
         delete-confirm-message="Är du säker på att du vill radera denna kund? Alla relaterade kontaktpersoner kommer också att tas bort."
-      >
-        <template #filters="{ searchQuery, statusFilter, filterOptions, updateSearchQuery, updateStatusFilter }">
-          <ActionBar
-            :action-buttons="actionButtons"
-            :search-query="searchQuery"
-            :status-filter="statusFilter"
-            search-placeholder="Sök på namn, ort, företag eller huvudkontakt..."
-            :filter-options="filterOptions"
-            @update:search-query="updateSearchQuery"
-            @update:status-filter="updateStatusFilter"
-          />
-        </template>
+    >
+      <template #filters="{ searchQuery, statusFilter, filterOptions, updateSearchQuery, updateStatusFilter }">
+        <ActionBar
+          :action-buttons="actionButtons"
+          :search-query="searchQuery"
+          :status-filter="statusFilter"
+            search-placeholder="Sök på namn, ort eller företag..."
+          :filter-options="filterOptions"
+          @update:search-query="updateSearchQuery"
+          @update:status-filter="updateStatusFilter"
+        />
+      </template>
 
-        <!-- Custom template for main contact column -->
-        <template #mainContact="{ row }">
+        <!-- Custom template for contact count column -->
+        <template #contactCount="{ row }">
           <div class="text-sm">
-            <div class="font-medium">{{ row.mainContactName }}</div>
-            <div v-if="row.mainContactEmail" class="text-gray-500 text-xs">
-              {{ row.mainContactEmail }}
-            </div>
-            <div class="text-gray-400 text-xs mt-1">
-              {{ row.contactCount }} kontakt(er) totalt
+            <div class="font-medium text-center">{{ row.contactCount }}</div>
+            <div class="text-gray-500 text-xs text-center">
+              kontakt{{ row.contactCount !== 1 ? 'er' : '' }}
             </div>
           </div>
         </template>
-      </DataTable>
+    </DataTable>
 
       <!-- Additional Statistics Panel -->
       <div class="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 px-6">

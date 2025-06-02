@@ -115,8 +115,8 @@ onMounted(() => {
           <component :is="item.icon" class="h-4 w-4" />
           {{ item.name }}
         </Button>
-        
-        <!-- Theme Switcher -->
+      
+      <!-- Theme Switcher -->
         <DropdownMenu>
           <DropdownMenuTrigger as-child>
             <Button variant="ghost" class="w-full justify-start gap-3 h-10">

@@ -17,12 +17,9 @@ import contactsData from './contacts.json'
 
 export interface Customer extends BaseEntity {
   id: number
-  name: string
   city: string
-  phone: string
   companyName: string
   status: 'Aktiv' | 'Inaktiv'
-  email: string
   // Detailed customer fields
   customerNumber: string
   organizationNumber: string
@@ -44,12 +41,12 @@ export interface Customer extends BaseEntity {
 export interface ContactPerson extends BaseEntity {
   id: number
   name: string
-  title: string
-  email: string
   phone: string
-  department: string
+  email: string
+  status: 'Aktiv' | 'Inaktiv'
   isMainContact: boolean
   customerId: number  // Foreign key to Customer
+  company: string // Keep for reference, but customerId is the primary relationship
 }
 
 // =============================================================================
@@ -58,23 +55,18 @@ export interface ContactPerson extends BaseEntity {
 
 // Transform contacts.json data to ContactPerson format
 const transformContactsToContactPersons = (): ContactPerson[] => {
-  return contactsData.map((contact: any) => {
-    // Find customer by company name to get customerId
-    const customer = customersData.find((c: any) => c.companyName === contact.company)
-    
-    return {
-      id: contact.id,
-      name: contact.name,
-      title: 'Kontaktperson', // Default title since not in contacts.json
-      email: contact.email,
-      phone: contact.phone,
-      department: 'Allmän', // Default department since not in contacts.json
-      isMainContact: contact.isMainContact,
-      customerId: customer?.id || 1, // Fallback to customer 1 if not found
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }
-  })
+  return contactsData.map((contact: any) => ({
+    id: contact.id,
+    name: contact.name,
+    phone: contact.phone,
+    email: contact.email,
+    status: contact.status,
+    isMainContact: contact.isMainContact,
+    customerId: contact.customerId,
+    company: contact.company,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }))
 }
 
 // =============================================================================
@@ -160,17 +152,50 @@ export const useCustomerStorage = defineStore('Customer', {
         ...customer,
         contactPersons,
         mainContact,
-        contactCount: contactPersons.length
+        contactCount: contactPersons.length,
+        // Derived contact information from main contact
+        name: mainContact?.name || '',
+        phone: mainContact?.phone || '',
+        email: mainContact?.email || ''
       }
     },
 
     getAllCustomersWithMainContact: (state) => {
-      return state.customers.map(customer => ({
-        ...customer,
-        mainContact: state.contactPersons.find(cp => 
+      return state.customers.map(customer => {
+        const mainContact = state.contactPersons.find(cp => 
           cp.customerId === customer.id && cp.isMainContact
         )
-      }))
+        return {
+          ...customer,
+          mainContact,
+          // Derived contact information from main contact
+          name: mainContact?.name || '',
+          phone: mainContact?.phone || '',
+          email: mainContact?.email || ''
+        }
+      })
+    },
+
+    // Specific getters for customer contact information
+    getCustomerName: (state) => (customerId: number): string => {
+      const mainContact = state.contactPersons.find(cp => 
+        cp.customerId === customerId && cp.isMainContact
+      )
+      return mainContact?.name || ''
+    },
+
+    getCustomerPhone: (state) => (customerId: number): string => {
+      const mainContact = state.contactPersons.find(cp => 
+        cp.customerId === customerId && cp.isMainContact
+      )
+      return mainContact?.phone || ''
+    },
+
+    getCustomerEmail: (state) => (customerId: number): string => {
+      const mainContact = state.contactPersons.find(cp => 
+        cp.customerId === customerId && cp.isMainContact
+      )
+      return mainContact?.email || ''
     },
 
     // Statistics

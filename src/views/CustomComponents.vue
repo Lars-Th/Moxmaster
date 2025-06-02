@@ -122,7 +122,6 @@
 import { ref, computed, onMounted, onErrorCaptured } from 'vue'
 import { ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import StandardHeader from '@/components/custom/StandardHeader.vue'
-import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
 import { TooltipProvider } from '@/components/ui/tooltip'
 

@@ -98,7 +98,7 @@ const switchApiMode = async (mode: 'production' | 'development') => {
   prospectorService.setApiMode(mode)
   // Reload companies with new mode
   await loadCompanies()
-}
+    }
 
 // Load companies on mount
 onMounted(() => {
@@ -138,23 +138,23 @@ const viewCompanyDetails = (company: Company) => {
       <div class="flex justify-between items-center mb-4">
         <div class="flex space-x-4">
           <!-- View Mode Toggle -->
-          <div class="flex space-x-2">
-            <Button
-              :variant="cardViewVariant"
-              size="sm"
-              @click="viewMode = 'cards'"
-            >
-              <LayoutGrid class="w-4 h-4 mr-2" />
-              Kort
-            </Button>
-            <Button
-              :variant="listViewVariant"
-              size="sm"
-              @click="viewMode = 'list'"
-            >
-              <List class="w-4 h-4 mr-2" />
-              Lista
-            </Button>
+        <div class="flex space-x-2">
+          <Button
+            :variant="cardViewVariant"
+            size="sm"
+            @click="viewMode = 'cards'"
+          >
+            <LayoutGrid class="w-4 h-4 mr-2" />
+            Kort
+          </Button>
+          <Button
+            :variant="listViewVariant"
+            size="sm"
+            @click="viewMode = 'list'"
+          >
+            <List class="w-4 h-4 mr-2" />
+            Lista
+          </Button>
           </div>
 
           <!-- API Mode Switch -->

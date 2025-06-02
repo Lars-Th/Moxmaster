@@ -136,14 +136,14 @@ const saveChanges = async () => {
       const result = await customerStore.updateCustomer(editedCustomer.value)
       
       if (result.success) {
-        hasChanges.value = false
-        showSaveConfirmation.value = true
+      hasChanges.value = false
+      showSaveConfirmation.value = true
         notificationSuccess('Ändringarna sparade', 'Kunduppgifterna har uppdaterats framgångsrikt.')
-        
-        // Dölj bekräftelsen efter 4 sekunder
-        setTimeout(() => {
-          showSaveConfirmation.value = false
-        }, 4000)
+      
+      // Dölj bekräftelsen efter 4 sekunder
+      setTimeout(() => {
+        showSaveConfirmation.value = false
+      }, 4000)
       } else {
         notificationError('Fel vid sparande', result.error || 'Kunde inte spara ändringarna.')
       }
@@ -183,8 +183,8 @@ const handleFieldBlur = (fieldName: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(editedCustomer.value.companyEmail)) {
       // Invalid email format, but we'll handle this in save validation
-    }
   }
+}
 }
 
 // =============================================================================
@@ -213,9 +213,9 @@ const handleAddContact = async (contactData: Omit<ContactPerson, 'id' | 'custome
           notificationSuccess('Kontaktperson tillagd', 'Den nya kontaktpersonen har lagts till och angetts som huvudkontakt.')
         } else {
           notificationSuccess('Kontaktperson tillagd', 'Den nya kontaktpersonen har lagts till, men kunde inte anges som huvudkontakt.')
-        }
+    }
       } else {
-        notificationSuccess('Kontaktperson tillagd', 'Den nya kontaktpersonen har lagts till framgångsrikt.')
+    notificationSuccess('Kontaktperson tillagd', 'Den nya kontaktpersonen har lagts till framgångsrikt.')
       }
     } else {
       notificationError('Fel vid tillägg', result.error || 'Kunde inte lägga till kontaktperson.')
@@ -245,7 +245,7 @@ const handleDeleteContact = async (id: number, name: string) => {
       const result = await customerStore.removeContactPerson(id)
       
       if (result.success) {
-        notificationSuccess('Kontaktperson borttagen', `${name} har tagits bort från kontaktlistan.`)
+    notificationSuccess('Kontaktperson borttagen', `${name} har tagits bort från kontaktlistan.`)
       } else {
         notificationError('Fel vid borttagning', result.error || 'Kunde inte ta bort kontaktperson.')
       }
@@ -308,27 +308,27 @@ const clearStoreError = () => {
     <!-- Main Content -->
     <div v-else-if="customer">
       <!-- Standard Header with enhanced data -->
-      <StandardHeader
+    <StandardHeader
         :title="customer.companyName"
-        :breadcrumbs="breadcrumbs"
+      :breadcrumbs="breadcrumbs"
         :show-stats="true"
         :stats="[
           { label: 'Kontaktpersoner', value: contactPersons.length.toString() },
           { label: 'Status', value: customer.status },
           { label: 'Typ', value: customer.companyType }
         ]"
-      />
-
+    />
+    
       <!-- Save confirmation -->
-      <StatusNotification
-        v-if="showSaveConfirmation"
-        type="success"
+    <StatusNotification
+      v-if="showSaveConfirmation"
+      type="success"
         title="Ändringar sparade"
         message="Kunduppgifterna har uppdaterats framgångsrikt."
         :show="showSaveConfirmation"
         @close="showSaveConfirmation = false"
-      />
-
+    />
+    
       <!-- Action Bar (Simple version for customer details) -->
       <div class="flex justify-end gap-2 px-6 py-4">
         <button
@@ -402,7 +402,7 @@ const clearStoreError = () => {
         <Separator class="mb-6" />
         <div class="flex items-center justify-between mb-6 px-6">
           <div>
-            <h2 class="text-lg font-semibold">Kontaktpersoner</h2>
+          <h2 class="text-lg font-semibold">Kontaktpersoner</h2>
             <p class="text-sm text-gray-600 mt-1">
               {{ contactPersons.length }} kontaktperson(er)
               <span v-if="mainContact" class="ml-2">

@@ -6,7 +6,8 @@
     "company": "Tech Solutions AB",
     "status": "Aktiv",
     "email": "linda.carlsson@techsolutionsab.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 1
   },
   {
     "id": 2,
@@ -15,7 +16,8 @@
     "company": "Tech Solutions AB",
     "status": "Aktiv",
     "email": "sara.sjöberg@techsolutionsab.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 1
   },
   {
     "id": 3,
@@ -24,7 +26,8 @@
     "company": "Tech Solutions AB",
     "status": "Aktiv",
     "email": "susanne.bergman@techsolutionsab.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 1
   },
   {
     "id": 4,
@@ -33,7 +36,8 @@
     "company": "Digital Innovations",
     "status": "Aktiv",
     "email": "åsa.lindqvist@digitalinnovations.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 2
   },
   {
     "id": 5,
@@ -42,7 +46,8 @@
     "company": "Future Systems",
     "status": "Aktiv",
     "email": "susanne.carlsson@futuresystems.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 3
   },
   {
     "id": 6,
@@ -51,7 +56,8 @@
     "company": "Smart Tech",
     "status": "Aktiv",
     "email": "anders.hedberg@smarttech.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 4
   },
   {
     "id": 7,
@@ -60,7 +66,8 @@
     "company": "Nordic Solutions",
     "status": "Aktiv",
     "email": "björn.hansen@nordicsolutions.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 5
   },
   {
     "id": 8,
@@ -69,7 +76,8 @@
     "company": "MegaCorp Industries",
     "status": "Aktiv",
     "email": "patrik.lindberg@megacorpindustries.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 6
   },
   {
     "id": 9,
@@ -78,7 +86,8 @@
     "company": "MegaCorp Industries",
     "status": "Aktiv",
     "email": "annika.ek@megacorpindustries.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 6
   },
   {
     "id": 10,
@@ -87,7 +96,8 @@
     "company": "MegaCorp Industries",
     "status": "Aktiv",
     "email": "maria.persson@megacorpindustries.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 6
   },
   {
     "id": 11,
@@ -96,7 +106,8 @@
     "company": "MegaCorp Industries",
     "status": "Aktiv",
     "email": "johan.ekström@megacorpindustries.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 6
   },
   {
     "id": 12,
@@ -105,7 +116,8 @@
     "company": "MegaCorp Industries",
     "status": "Aktiv",
     "email": "patrik.gustafsson@megacorpindustries.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 6
   },
   {
     "id": 13,
@@ -114,7 +126,8 @@
     "company": "Global Tech Corporation",
     "status": "Aktiv",
     "email": "niklas.olsson@globaltechcorporation.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 7
   },
   {
     "id": 14,
@@ -123,7 +136,8 @@
     "company": "Global Tech Corporation",
     "status": "Aktiv",
     "email": "erik.olsson@globaltechcorporation.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 7
   },
   {
     "id": 15,
@@ -132,7 +146,8 @@
     "company": "Global Tech Corporation",
     "status": "Aktiv",
     "email": "eva.hedberg@globaltechcorporation.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 7
   },
   {
     "id": 16,
@@ -141,7 +156,8 @@
     "company": "Innovative Systems",
     "status": "Aktiv",
     "email": "björn.olsson@innovativesystems.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 8
   },
   {
     "id": 17,
@@ -150,7 +166,8 @@
     "company": "NextGen Solutions",
     "status": "Aktiv",
     "email": "eva.holm@nextgensolutions.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 9
   },
   {
     "id": 18,
@@ -159,7 +176,8 @@
     "company": "Alpha Technologies",
     "status": "Aktiv",
     "email": "johan.andersson@alphatechnologies.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 10
   },
   {
     "id": 19,
@@ -168,7 +186,8 @@
     "company": "Alpha Technologies",
     "status": "Aktiv",
     "email": "karin.nilsson@alphatechnologies.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 10
   },
   {
     "id": 20,
@@ -177,7 +196,8 @@
     "company": "Alpha Technologies",
     "status": "Aktiv",
     "email": "jenny.ek@alphatechnologies.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 10
   },
   {
     "id": 21,
@@ -186,7 +206,8 @@
     "company": "Alpha Technologies",
     "status": "Aktiv",
     "email": "camilla.lundgren@alphatechnologies.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 10
   },
   {
     "id": 22,
@@ -195,7 +216,8 @@
     "company": "Alpha Technologies",
     "status": "Aktiv",
     "email": "erik.hansen@alphatechnologies.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 10
   },
   {
     "id": 23,
@@ -204,7 +226,8 @@
     "company": "Beta Dynamics",
     "status": "Aktiv",
     "email": "patrik.wallin@betadynamics.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 11
   },
   {
     "id": 24,
@@ -213,7 +236,8 @@
     "company": "Gamma Enterprises",
     "status": "Aktiv",
     "email": "åsa.larsson@gammaenterprises.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 12
   },
   {
     "id": 25,
@@ -222,7 +246,8 @@
     "company": "Delta Systems",
     "status": "Aktiv",
     "email": "daniel.olsson@deltasystems.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 13
   },
   {
     "id": 26,
@@ -231,7 +256,8 @@
     "company": "Epsilon Tech",
     "status": "Aktiv",
     "email": "peter.karlsson@epsilontech.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 14
   },
   {
     "id": 27,
@@ -240,7 +266,8 @@
     "company": "Zeta Innovations",
     "status": "Aktiv",
     "email": "anna.bergström@zetainnovations.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 15
   },
   {
     "id": 28,
@@ -249,7 +276,8 @@
     "company": "Zeta Innovations",
     "status": "Aktiv",
     "email": "mattias.persson@zetainnovations.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 15
   },
   {
     "id": 29,
@@ -258,7 +286,8 @@
     "company": "Zeta Innovations",
     "status": "Aktiv",
     "email": "lisa.persson@zetainnovations.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 15
   },
   {
     "id": 30,
@@ -267,7 +296,8 @@
     "company": "Zeta Innovations",
     "status": "Aktiv",
     "email": "linda.andersson@zetainnovations.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 15
   },
   {
     "id": 31,
@@ -276,7 +306,8 @@
     "company": "Zeta Innovations",
     "status": "Aktiv",
     "email": "sara.lindberg@zetainnovations.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 15
   },
   {
     "id": 32,
@@ -285,7 +316,8 @@
     "company": "Stellar Corporation",
     "status": "Inaktiv",
     "email": "björn.lundgren@stellarcorporation.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 16
   },
   {
     "id": 33,
@@ -294,7 +326,8 @@
     "company": "Quantum Solutions",
     "status": "Aktiv",
     "email": "björn.nyberg@quantumsolutions.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 17
   },
   {
     "id": 34,
@@ -303,7 +336,8 @@
     "company": "Nano Systems",
     "status": "Inaktiv",
     "email": "niklas.engström@nanosystems.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 18
   },
   {
     "id": 35,
@@ -312,7 +346,8 @@
     "company": "Micro Enterprises",
     "status": "Aktiv",
     "email": "peter.fredriksson@microenterprises.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 19
   },
   {
     "id": 36,
@@ -321,7 +356,8 @@
     "company": "Macro Dynamics",
     "status": "Inaktiv",
     "email": "björn.lindberg@macrodynamics.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 20
   },
   {
     "id": 37,
@@ -330,7 +366,8 @@
     "company": "Macro Dynamics",
     "status": "Inaktiv",
     "email": "susanne.lundgren@macrodynamics.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 20
   },
   {
     "id": 38,
@@ -339,7 +376,8 @@
     "company": "Prime Technologies",
     "status": "Aktiv",
     "email": "anders.carlsson@primetechnologies.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 21
   },
   {
     "id": 39,
@@ -348,7 +386,8 @@
     "company": "Supreme Systems",
     "status": "Aktiv",
     "email": "björn.sjöberg@supremesystems.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 22
   },
   {
     "id": 40,
@@ -357,7 +396,8 @@
     "company": "Ultimate Solutions",
     "status": "Aktiv",
     "email": "emma.svensson@ultimatesolutions.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 23
   },
   {
     "id": 41,
@@ -366,7 +406,8 @@
     "company": "Advanced Tech",
     "status": "Inaktiv",
     "email": "anders.carlsson@advancedtech.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 24
   },
   {
     "id": 42,
@@ -375,7 +416,8 @@
     "company": "Modern Systems",
     "status": "Aktiv",
     "email": "mikael.sjöberg@modernsystems.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 25
   },
   {
     "id": 43,
@@ -384,7 +426,8 @@
     "company": "Modern Systems",
     "status": "Aktiv",
     "email": "thomas.bergman@modernsystems.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 25
   },
   {
     "id": 44,
@@ -393,7 +436,8 @@
     "company": "Modern Systems",
     "status": "Aktiv",
     "email": "erik.nilsson@modernsystems.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 25
   },
   {
     "id": 45,
@@ -402,7 +446,8 @@
     "company": "Modern Systems",
     "status": "Aktiv",
     "email": "linda.strand@modernsystems.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 25
   },
   {
     "id": 46,
@@ -411,7 +456,8 @@
     "company": "Progressive Solutions",
     "status": "Aktiv",
     "email": "helena.strand@progressivesolutions.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 26
   },
   {
     "id": 47,
@@ -420,7 +466,8 @@
     "company": "Dynamic Enterprises",
     "status": "Inaktiv",
     "email": "martin.holm@dynamicenterprises.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 27
   },
   {
     "id": 48,
@@ -429,7 +476,8 @@
     "company": "Integrated Systems",
     "status": "Aktiv",
     "email": "erik.hedberg@integratedsystems.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 28
   },
   {
     "id": 49,
@@ -438,7 +486,8 @@
     "company": "Unified Technologies",
     "status": "Aktiv",
     "email": "emma.hedberg@unifiedtechnologies.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 29
   },
   {
     "id": 50,
@@ -447,7 +496,8 @@
     "company": "Connected Solutions",
     "status": "Aktiv",
     "email": "patrik.johansson@connectedsolutions.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 30
   },
   {
     "id": 51,
@@ -456,7 +506,8 @@
     "company": "Connected Solutions",
     "status": "Aktiv",
     "email": "linda.andersson@connectedsolutions.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 30
   },
   {
     "id": 52,
@@ -465,7 +516,8 @@
     "company": "Connected Solutions",
     "status": "Aktiv",
     "email": "sara.sjöberg@connectedsolutions.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 30
   },
   {
     "id": 53,
@@ -474,7 +526,8 @@
     "company": "Smart Innovations",
     "status": "Aktiv",
     "email": "anders.holm@smartinnovations.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 31
   },
   {
     "id": 54,
@@ -483,7 +536,8 @@
     "company": "Intelligent Systems",
     "status": "Inaktiv",
     "email": "björn.ekström@intelligentsystems.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 32
   },
   {
     "id": 55,
@@ -492,7 +546,8 @@
     "company": "Automated Solutions",
     "status": "Inaktiv",
     "email": "erik.petersson@automatedsolutions.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 33
   },
   {
     "id": 56,
@@ -501,7 +556,8 @@
     "company": "Digital Transformation",
     "status": "Aktiv",
     "email": "karin.andersson@digitaltransformation.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 34
   },
   {
     "id": 57,
@@ -510,7 +566,8 @@
     "company": "Cloud Technologies",
     "status": "Aktiv",
     "email": "annika.bergström@cloudtechnologies.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 35
   },
   {
     "id": 58,
@@ -519,7 +576,8 @@
     "company": "Cloud Technologies",
     "status": "Aktiv",
     "email": "erik.lindqvist@cloudtechnologies.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 35
   },
   {
     "id": 59,
@@ -528,7 +586,8 @@
     "company": "Cloud Technologies",
     "status": "Aktiv",
     "email": "magnus.bergman@cloudtechnologies.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 35
   },
   {
     "id": 60,
@@ -537,7 +596,8 @@
     "company": "Data Dynamics",
     "status": "Aktiv",
     "email": "niklas.johansson@datadynamics.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 36
   },
   {
     "id": 61,
@@ -546,7 +606,8 @@
     "company": "Analytics Corporation",
     "status": "Aktiv",
     "email": "jenny.forsberg@analyticscorporation.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 37
   },
   {
     "id": 62,
@@ -555,7 +616,8 @@
     "company": "Machine Learning AB",
     "status": "Aktiv",
     "email": "sofia.fredriksson@machinelearningab.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 38
   },
   {
     "id": 63,
@@ -564,7 +626,8 @@
     "company": "AI Solutions",
     "status": "Aktiv",
     "email": "björn.engström@aisolutions.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 39
   },
   {
     "id": 64,
@@ -573,7 +636,8 @@
     "company": "Robotics Systems",
     "status": "Aktiv",
     "email": "erik.hedberg@roboticssystems.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 40
   },
   {
     "id": 65,
@@ -582,7 +646,8 @@
     "company": "Robotics Systems",
     "status": "Aktiv",
     "email": "sara.sjöberg@roboticssystems.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 40
   },
   {
     "id": 66,
@@ -591,7 +656,8 @@
     "company": "Robotics Systems",
     "status": "Aktiv",
     "email": "susanne.olsson@roboticssystems.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 40
   },
   {
     "id": 67,
@@ -600,7 +666,8 @@
     "company": "IoT Innovations",
     "status": "Aktiv",
     "email": "lisa.larsson@iotinnovations.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 41
   },
   {
     "id": 68,
@@ -609,7 +676,8 @@
     "company": "Blockchain Technologies",
     "status": "Aktiv",
     "email": "maria.larsson@blockchaintechnologies.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 42
   },
   {
     "id": 69,
@@ -618,7 +686,8 @@
     "company": "Cyber Security",
     "status": "Aktiv",
     "email": "maria.olsson@cybersecurity.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 43
   },
   {
     "id": 70,
@@ -627,7 +696,8 @@
     "company": "Network Solutions",
     "status": "Aktiv",
     "email": "camilla.hansen@networksolutions.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 44
   },
   {
     "id": 71,
@@ -636,7 +706,8 @@
     "company": "Infrastructure Systems",
     "status": "Aktiv",
     "email": "eva.svensson@infrastructuresystems.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 45
   },
   {
     "id": 72,
@@ -645,7 +716,8 @@
     "company": "Infrastructure Systems",
     "status": "Aktiv",
     "email": "annika.karlsson@infrastructuresystems.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 45
   },
   {
     "id": 73,
@@ -654,7 +726,8 @@
     "company": "Infrastructure Systems",
     "status": "Aktiv",
     "email": "karin.engström@infrastructuresystems.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 45
   },
   {
     "id": 74,
@@ -663,7 +736,8 @@
     "company": "Platform Technologies",
     "status": "Aktiv",
     "email": "martin.jonsson@platformtechnologies.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 46
   },
   {
     "id": 75,
@@ -672,7 +746,8 @@
     "company": "API Solutions",
     "status": "Aktiv",
     "email": "camilla.hansen@apisolutions.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 47
   },
   {
     "id": 76,
@@ -681,7 +756,8 @@
     "company": "Software Dynamics",
     "status": "Aktiv",
     "email": "linda.bergman@softwaredynamics.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 48
   },
   {
     "id": 77,
@@ -690,7 +766,8 @@
     "company": "Hardware Systems",
     "status": "Inaktiv",
     "email": "helena.nyberg@hardwaresystems.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 49
   },
   {
     "id": 78,
@@ -699,7 +776,8 @@
     "company": "Electronics Corporation",
     "status": "Aktiv",
     "email": "niklas.bergman@electronicscorporation.se",
-    "isMainContact": true
+    "isMainContact": true,
+    "customerId": 50
   },
   {
     "id": 79,
@@ -708,7 +786,8 @@
     "company": "Electronics Corporation",
     "status": "Aktiv",
     "email": "martin.jonsson@electronicscorporation.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 50
   },
   {
     "id": 80,
@@ -717,7 +796,8 @@
     "company": "Electronics Corporation",
     "status": "Aktiv",
     "email": "björn.nyberg@electronicscorporation.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 50
   },
   {
     "id": 81,
@@ -726,6 +806,7 @@
     "company": "Electronics Corporation",
     "status": "Aktiv",
     "email": "jenny.ekström@electronicscorporation.se",
-    "isMainContact": false
+    "isMainContact": false,
+    "customerId": 50
   }
 ]

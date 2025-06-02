@@ -10,6 +10,7 @@ export interface Contact {
   status: 'Aktiv' | 'Inaktiv'
   email: string
   isMainContact: boolean
+  customerId: number  // Foreign key to Customer
 }
 
 interface ContactState {
@@ -27,6 +28,13 @@ export const useContactStorage = defineStore('contact', {
     totalContacts: (state): number => state.contacts.length,
     getContactById: (state) => (id: number): Contact | undefined => state.contacts.find(contact => contact.id === id),
     getContactsByCompany: (state) => (company: string): Contact[] => state.contacts.filter(contact => contact.company === company),
+    
+    // New getters for customer-based relationships
+    getContactsByCustomerId: (state) => (customerId: number): Contact[] => 
+      state.contacts.filter(contact => contact.customerId === customerId),
+    
+    getMainContactByCustomerId: (state) => (customerId: number): Contact | undefined =>
+      state.contacts.find(contact => contact.customerId === customerId && contact.isMainContact),
   },
   actions: {
     addContact(contact: Omit<Contact, 'id'>) {
