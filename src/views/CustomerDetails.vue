@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useNotifications } from '@/composables/useNotifications'
 import { Building2, MapPin, Receipt } from 'lucide-vue-next'
 import StandardHeader from '@/components/custom/StandardHeader.vue'
 import StatusNotification from '@/components/custom/StatusNotification.vue'
-import { useCustomerStorage, type Customer, type ContactPerson } from '@/storages/CustomerStorage'
+import { useCustomerStorage, type Customer } from '@/storages/CustomerStorage'
+import { useContactStorage, type Contact } from '@/storages/contactStorage'
 
 // Import tab components
 import TabAllmant from '../components/custom/TabAllmant.vue'
@@ -14,7 +15,6 @@ import TabBesok from '../components/custom/TabBesok.vue'
 import TabFaktura from '../components/custom/TabFaktura.vue'
 import ContactPersonsTable from '../components/custom/ContactPersonsTable.vue'
 import AddContactDialog from '../components/custom/AddContactDialog.vue'
-import { Separator } from '@/components/ui/separator'
 import { TooltipProvider } from '@/components/ui/tooltip'
 
 interface BreadcrumbItem {
@@ -27,29 +27,36 @@ const route = useRoute()
 const router = useRouter()
 const { success: notificationSuccess, error: notificationError, confirm } = useNotifications()
 const customerStore = useCustomerStorage()
+const contactStore = useContactStorage()
 
 // =============================================================================
-// REACTIVE DATA USING IMPROVED STORE
+// REACTIVE DATA USING SEPARATED STORES
 // =============================================================================
-
-// Get customer with all related data using the enhanced getter
-const customerWithData = computed(() => {
-  const customerId = Number(route.params.id)
-  return customerStore.getCustomerWithContacts(customerId)
-})
 
 // Basic customer data
 const customer = computed(() => customerStore.getCustomerById(Number(route.params.id)))
 
 // Contact persons for this customer
 const contactPersons = computed(() => 
-  customerStore.getContactPersonsByCustomerId(Number(route.params.id))
+  contactStore.getContactsByCustomerId(Number(route.params.id))
 )
 
 // Main contact for this customer
 const mainContact = computed(() => 
-  customerStore.getMainContactByCustomerId(Number(route.params.id))
+  contactStore.getMainContactByCustomerId(Number(route.params.id))
 )
+
+// Customer with contact data combined
+const customerWithData = computed(() => {
+  if (!customer.value) return null
+  
+  return {
+    ...customer.value,
+    contactPersons: contactPersons.value,
+    mainContact: mainContact.value,
+    contactCount: contactPersons.value.length
+  }
+})
 
 // Functional breadcrumbs with customer name
 const breadcrumbs = computed((): BreadcrumbItem[] => [
@@ -132,18 +139,18 @@ const saveChanges = async () => {
         }
       }
 
-      // Update customer using improved store
+      // Update customer using customer store
       const result = await customerStore.updateCustomer(editedCustomer.value)
       
       if (result.success) {
-      hasChanges.value = false
-      showSaveConfirmation.value = true
+        hasChanges.value = false
+        showSaveConfirmation.value = true
         notificationSuccess('Ändringarna sparade', 'Kunduppgifterna har uppdaterats framgångsrikt.')
       
-      // Dölj bekräftelsen efter 4 sekunder
-      setTimeout(() => {
-        showSaveConfirmation.value = false
-      }, 4000)
+        // Dölj bekräftelsen efter 4 sekunder
+        setTimeout(() => {
+          showSaveConfirmation.value = false
+        }, 4000)
       } else {
         notificationError('Fel vid sparande', result.error || 'Kunde inte spara ändringarna.')
       }
@@ -183,278 +190,241 @@ const handleFieldBlur = (fieldName: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(editedCustomer.value.companyEmail)) {
       // Invalid email format, but we'll handle this in save validation
+    }
   }
-}
 }
 
 // =============================================================================
 // CONTACT PERSON MANAGEMENT
 // =============================================================================
 
-const handleAddContact = async (contactData: Omit<ContactPerson, 'id' | 'customerId'>) => {
+const handleAddContact = async (contactData: Omit<Contact, 'id' | 'customerId' | 'createdAt' | 'updatedAt'>) => {
   if (!customer.value) return
   
   try {
-    // Add contact person using improved store
-    const result = await customerStore.addContactPerson({
+    // Add contact person using contact store
+    const result = await contactStore.addContact({
       ...contactData,
       customerId: customer.value.id
     })
     
     if (result.success) {
-      // If this should be the main contact, set it as such
-      if (contactData.isMainContact && result.data) {
-        const mainContactResult = await customerStore.setMainContact(
-          customer.value.id, 
-          result.data.id
-        )
-        
-        if (mainContactResult.success) {
-          notificationSuccess('Kontaktperson tillagd', 'Den nya kontaktpersonen har lagts till och angetts som huvudkontakt.')
-        } else {
-          notificationSuccess('Kontaktperson tillagd', 'Den nya kontaktpersonen har lagts till, men kunde inte anges som huvudkontakt.')
-    }
-      } else {
-    notificationSuccess('Kontaktperson tillagd', 'Den nya kontaktpersonen har lagts till framgångsrikt.')
-      }
+      notificationSuccess('Kontakt tillagd', 'Kontaktpersonen har lagts till framgångsrikt.')
     } else {
-      notificationError('Fel vid tillägg', result.error || 'Kunde inte lägga till kontaktperson.')
+      notificationError('Fel vid tillägg', result.error || 'Kunde inte lägga till kontaktpersonen.')
     }
-  } catch (error) {
-    notificationError('Fel vid tillägg', 'Ett oväntat fel inträffade vid tillägg av kontaktperson.')
+  } catch (err) {
+    notificationError('Fel vid tillägg', 'Ett oväntat fel inträffade. Försök igen.')
   }
 }
 
-const handleSendEmail = (email: string) => {
-  window.location.href = `mailto:${email}`
-}
-
-const handleDeleteContact = async (id: number, name: string) => {
-  const confirmed = await confirm(
-    'Ta bort kontaktperson',
-    `Är du säker på att du vill ta bort ${name} från kontaktlistan?`,
-    {
-      confirmText: 'Ta bort',
-      cancelText: 'Avbryt',
-      confirmVariant: 'destructive'
+const handleUpdateContact = async (contactData: Contact) => {
+  try {
+    const result = await contactStore.updateContact(contactData)
+    
+    if (result.success) {
+      notificationSuccess('Kontakt uppdaterad', 'Kontaktpersonen har uppdaterats framgångsrikt.')
+    } else {
+      notificationError('Fel vid uppdatering', result.error || 'Kunde inte uppdatera kontaktpersonen.')
     }
-  )
-
-  if (confirmed) {
-    try {
-      const result = await customerStore.removeContactPerson(id)
-      
-      if (result.success) {
-    notificationSuccess('Kontaktperson borttagen', `${name} har tagits bort från kontaktlistan.`)
-      } else {
-        notificationError('Fel vid borttagning', result.error || 'Kunde inte ta bort kontaktperson.')
-      }
-    } catch (error) {
-      notificationError('Fel vid borttagning', 'Ett oväntat fel inträffade vid borttagning av kontaktperson.')
-    }
+  } catch (err) {
+    notificationError('Fel vid uppdatering', 'Ett oväntat fel inträffade. Försök igen.')
   }
 }
 
-const handleEditContact = (person: ContactPerson) => {
-  // TODO: Implement contact editing functionality
-  console.log('Edit contact:', person)
-  notificationSuccess('Redigera kontaktperson', `Redigeringsfunktion för ${person.name} kommer snart.`)
+const handleDeleteContact = async (contactId: number) => {
+  try {
+    const result = await contactStore.removeContact(contactId)
+    
+    if (result.success) {
+      notificationSuccess('Kontakt borttagen', 'Kontaktpersonen har tagits bort framgångsrikt.')
+    } else {
+      notificationError('Fel vid borttagning', result.error || 'Kunde inte ta bort kontaktpersonen.')
+    }
+  } catch (err) {
+    notificationError('Fel vid borttagning', 'Ett oväntat fel inträffade. Försök igen.')
+  }
 }
 
-const handleSetMainContact = async (contactId: number, contactName: string) => {
+const handleSetMainContact = async (contactId: number) => {
   if (!customer.value) return
   
   try {
-    const result = await customerStore.setMainContact(customer.value.id, contactId)
+    const result = await contactStore.setMainContact(customer.value.id, contactId)
     
     if (result.success) {
-      notificationSuccess('Huvudkontakt angiven', `${contactName} har angetts som huvudkontakt.`)
+      notificationSuccess('Huvudkontakt angiven', 'Huvudkontakten har uppdaterats framgångsrikt.')
     } else {
-      notificationError('Fel vid ändring', result.error || 'Kunde inte ange som huvudkontakt.')
+      notificationError('Fel vid uppdatering', result.error || 'Kunde inte ange huvudkontakt.')
     }
-  } catch (error) {
-    notificationError('Fel vid ändring', 'Ett oväntat fel inträffade vid ändring av huvudkontakt.')
+  } catch (err) {
+    notificationError('Fel vid uppdatering', 'Ett oväntat fel inträffade. Försök igen.')
   }
 }
+
+// =============================================================================
+// COMPUTED PROPERTIES FOR DISPLAY
+// =============================================================================
+
+const customerStats = computed(() => [
+  {
+    label: 'Status',
+    value: customer.value?.status || 'Okänd'
+  },
+  {
+    label: 'Typ',
+    value: customer.value?.companyType || 'Okänd'
+  },
+  {
+    label: 'Kontaktpersoner',
+    value: contactPersons.value.length.toString()
+  },
+  {
+    label: 'Huvudkontakt',
+    value: mainContact.value ? 'Ja' : 'Nej'
+  }
+])
+
+// =============================================================================
+// WATCHERS
+// =============================================================================
+
+// Watch for changes in the customer data and update editedCustomer
+watch(customer, (newCustomer) => {
+  if (newCustomer && !editedCustomer.value) {
+    editedCustomer.value = { ...newCustomer }
+  }
+}, { immediate: true })
 
 // =============================================================================
 // ERROR HANDLING
 // =============================================================================
 
-// Clear any store errors when component unmounts
 const clearStoreError = () => {
   customerStore.clearError()
+  contactStore.clearError()
 }
 </script>
 
 <template>
   <div class="w-full">
     <!-- Store Error Display -->
-    <div v-if="customerStore.error" class="mb-4">
-      <StatusNotification
-        type="error"
-        :title="customerStore.error"
-        message="Ett fel inträffade vid hantering av kunddata."
-        :show="true"
-        @close="clearStoreError"
-      />
+    <div v-if="customerStore.error || contactStore.error" class="mb-4 p-4 bg-red-50 border border-red-200 rounded">
+      <div class="text-red-800">{{ customerStore.error || contactStore.error }}</div>
+      <button 
+        @click="clearStoreError()" 
+        class="mt-2 text-sm text-red-600 hover:text-red-800"
+      >
+        Stäng
+      </button>
     </div>
 
     <!-- Loading State -->
-    <div v-if="customerStore.loading" class="text-center py-8">
+    <div v-if="customerStore.loading || contactStore.loading" class="text-center py-8">
       <div class="text-gray-600">Laddar kunduppgifter...</div>
     </div>
 
-    <!-- Main Content -->
-    <div v-else-if="customer">
-      <!-- Standard Header with enhanced data -->
-    <StandardHeader
-        :title="customer.companyName"
-      :breadcrumbs="breadcrumbs"
-        :show-stats="true"
-        :stats="[
-          { label: 'Kontaktpersoner', value: contactPersons.length.toString() },
-          { label: 'Status', value: customer.status },
-          { label: 'Typ', value: customer.companyType }
-        ]"
-    />
-    
-      <!-- Save confirmation -->
-    <StatusNotification
-      v-if="showSaveConfirmation"
-      type="success"
-        title="Ändringar sparade"
-        message="Kunduppgifterna har uppdaterats framgångsrikt."
-        :show="showSaveConfirmation"
-        @close="showSaveConfirmation = false"
-    />
-    
-      <!-- Action Bar (Simple version for customer details) -->
-      <div class="flex justify-end gap-2 px-6 py-4">
-        <button
-          v-for="button in actionButtons"
-          :key="button.label"
-          :class="[
-            'px-4 py-2 rounded text-sm font-medium transition-colors',
-            button.variant === 'outline' 
-              ? 'border border-gray-300 text-gray-700 hover:bg-gray-50' 
-              : 'bg-blue-600 text-white hover:bg-blue-700',
-            button.disabled ? 'opacity-50 cursor-not-allowed' : '',
-            button.class || ''
-          ]"
-          :disabled="button.disabled"
-          @click="button.onClick"
-        >
-          {{ button.label }}
-        </button>
-      </div>
-
-      <!-- Customer Information Tabs -->
-      <Tabs default-value="general" class="w-full mt-6 p-6">
-        <TabsList class="grid w-full grid-cols-3">
-          <TabsTrigger value="general" class="flex items-center gap-2">
-            <Building2 class="h-4 w-4" />
-            Allmänt
-          </TabsTrigger>
-          <TabsTrigger value="visit-address" class="flex items-center gap-2">
-            <MapPin class="h-4 w-4" />
-            Besöksadress
-          </TabsTrigger>
-          <TabsTrigger value="billing-address" class="flex items-center gap-2">
-            <Receipt class="h-4 w-4" />
-            Faktureringsadress
-          </TabsTrigger>
-        </TabsList>
-
-        <!-- Allmänt flik -->
-        <TabsContent value="general" class="mt-6">
-          <TabAllmant 
-            v-if="editedCustomer"
-            :edited-customer="editedCustomer" 
-            @field-change="handleFieldChange"
-            @field-blur="handleFieldBlur"
-          />
-        </TabsContent>
-
-        <!-- Besöksadress flik -->
-        <TabsContent value="visit-address" class="mt-6">
-          <TabBesok 
-            v-if="editedCustomer"
-            :edited-customer="editedCustomer" 
-            @field-change="handleFieldChange"
-            @field-blur="handleFieldBlur"
-          />
-        </TabsContent>
-
-        <!-- Faktureringsadress flik -->
-        <TabsContent value="billing-address" class="mt-6">
-          <TabFaktura 
-            v-if="editedCustomer"
-            :edited-customer="editedCustomer" 
-            @field-change="handleFieldChange"
-            @field-blur="handleFieldBlur"
-          />
-        </TabsContent>
-      </Tabs>
-
-      <!-- Contact Persons Section -->
-      <div class="mt-12">
-        <Separator class="mb-6" />
-        <div class="flex items-center justify-between mb-6 px-6">
-          <div>
-          <h2 class="text-lg font-semibold">Kontaktpersoner</h2>
-            <p class="text-sm text-gray-600 mt-1">
-              {{ contactPersons.length }} kontaktperson(er)
-              <span v-if="mainContact" class="ml-2">
-                • Huvudkontakt: {{ mainContact.name }}
-              </span>
-            </p>
-          </div>
-          <AddContactDialog @add-contact="handleAddContact" />
-        </div>
-        
-        <TooltipProvider>
-          <ContactPersonsTable 
-            :contact-persons="contactPersons"
-            @delete-contact="handleDeleteContact"
-            @send-email="handleSendEmail"
-            @edit-contact="handleEditContact"
-            @set-main-contact="handleSetMainContact"
-          />
-        </TooltipProvider>
-      </div>
-
-      <!-- Customer Statistics (Enhanced) -->
-      <div v-if="customerWithData" class="mt-8 p-4 bg-gray-50 rounded-lg">
-        <h3 class="font-semibold mb-2">Kundstatistik</h3>
-        <div class="grid grid-cols-3 gap-4 text-sm">
-          <div>
-            <span class="text-gray-600">Totalt antal kontakter:</span>
-            <span class="ml-2 font-medium">{{ customerWithData.contactCount }}</span>
-          </div>
-          <div>
-            <span class="text-gray-600">Har huvudkontakt:</span>
-            <span class="ml-2 font-medium">{{ customerWithData.mainContact ? 'Ja' : 'Nej' }}</span>
-          </div>
-          <div>
-            <span class="text-gray-600">Senast uppdaterad:</span>
-            <span class="ml-2 font-medium">
-              {{ customerStore.lastUpdated ? new Date(customerStore.lastUpdated).toLocaleDateString('sv-SE') : 'Okänd' }}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Customer Not Found -->
-    <div v-else class="text-center py-8">
+    <div v-else-if="!customer" class="text-center py-8">
       <div class="text-gray-600">Kunden kunde inte hittas.</div>
       <button 
-        @click="goBack" 
+        @click="goBack"
         class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
       >
         Tillbaka till kundlista
       </button>
+    </div>
+
+    <!-- Main Content -->
+    <div v-else>
+      <!-- Save Confirmation -->
+      <StatusNotification
+        v-if="showSaveConfirmation"
+        type="success"
+        title="Ändringarna sparade"
+        message="Kunduppgifterna har uppdaterats framgångsrikt."
+        :show="showSaveConfirmation"
+        @close="showSaveConfirmation = false"
+      />
+
+      <!-- Standard Header -->
+      <StandardHeader
+        :title="customer.companyName"
+        :breadcrumbs="breadcrumbs"
+        :description="`Kunddetaljer för ${customer.companyName} i ${customer.city}`"
+        :show-stats="true"
+        :stats="customerStats"
+        :action-buttons="actionButtons"
+      />
+
+      <!-- Main Content Tabs -->
+      <div class="px-6">
+        <Tabs default-value="general" class="w-full">
+          <TabsList class="grid w-full grid-cols-3">
+            <TabsTrigger value="general">
+              <Building2 class="w-4 h-4 mr-2" />
+              Allmänt
+            </TabsTrigger>
+            <TabsTrigger value="visits">
+              <MapPin class="w-4 h-4 mr-2" />
+              Besök
+            </TabsTrigger>
+            <TabsTrigger value="invoices">
+              <Receipt class="w-4 h-4 mr-2" />
+              Fakturor
+            </TabsTrigger>
+          </TabsList>
+
+          <!-- General Tab -->
+          <TabsContent value="general" class="space-y-6">
+            <TabAllmant 
+              v-if="editedCustomer"
+              :edited-customer="editedCustomer"
+              @field-change="handleFieldChange"
+              @field-blur="handleFieldBlur"
+            />
+          </TabsContent>
+
+          <!-- Visits Tab -->
+          <TabsContent value="visits" class="space-y-6">
+            <TabBesok 
+              v-if="editedCustomer"
+              :edited-customer="editedCustomer"
+              @field-change="handleFieldChange"
+            />
+          </TabsContent>
+
+          <!-- Invoices Tab -->
+          <TabsContent value="invoices" class="space-y-6">
+            <TabFaktura 
+              v-if="editedCustomer"
+              :edited-customer="editedCustomer"
+              @field-change="handleFieldChange"
+            />
+          </TabsContent>
+        </Tabs>
+
+        <!-- Contact Persons Section - Always Visible -->
+        <div class="mt-8 bg-white p-6 rounded-lg border">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold">Kontaktpersoner</h3>
+            <AddContactDialog
+              :customer-id="customer.id"
+              @contact-added="handleAddContact"
+            />
+          </div>
+          
+          <TooltipProvider>
+            <ContactPersonsTable
+              :contact-persons="contactPersons"
+              :main-contact="mainContact"
+              @update-contact="handleUpdateContact"
+              @delete-contact="handleDeleteContact"
+              @set-main-contact="handleSetMainContact"
+            />
+          </TooltipProvider>
+        </div>
+      </div>
     </div>
   </div>
 </template> 

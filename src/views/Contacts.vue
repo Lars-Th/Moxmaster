@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCustomerStorage } from '@/storages/CustomerStorage'
+import { useContactStorage } from '@/storages/contactStorage'
 import { Plus } from 'lucide-vue-next'
 import StandardHeader from '@/components/custom/StandardHeader.vue'
 import ActionBar from '@/components/custom/ActionBar.vue'
@@ -9,20 +10,23 @@ import DataTable from '@/components/custom/DataTable.vue'
 
 const router = useRouter()
 const customerStore = useCustomerStorage()
+const contactStore = useContactStorage()
 
 // =============================================================================
-// COMPUTED DATA USING IMPROVED STORE
+// COMPUTED DATA USING SEPARATED STORES
 // =============================================================================
 
 // Get all contact persons with their customer information
 const allContactPersonsWithCustomers = computed(() => {
-  return customerStore.contactPersons.map(contact => {
+  return contactStore.contacts.map(contact => {
     const customer = customerStore.getCustomerById(contact.customerId)
     return {
       ...contact,
       customerName: customer?.companyName || 'Okänd kund',
       customerCity: customer?.city || '',
-      customerStatus: customer?.status || 'Okänd'
+      customerStatus: customer?.status || 'Okänd',
+      title: '', // Add default title since it's not in the contact interface
+      department: '' // Add default department since it's not in the contact interface
     }
   })
 })
@@ -30,7 +34,7 @@ const allContactPersonsWithCustomers = computed(() => {
 // Functional breadcrumbs
 const breadcrumbs = [
   { label: 'Home', to: '/' },
-  { label: `Kontaktpersoner (${customerStore.totalContactPersons})`, isCurrentPage: true }
+  { label: `Kontaktpersoner (${contactStore.totalContacts})`, isCurrentPage: true }
 ]
 
 // Column configuration for the data table
@@ -104,25 +108,25 @@ const transformedContacts = computed(() => {
 })
 
 // =============================================================================
-// ENHANCED STATISTICS USING IMPROVED STORE
+// ENHANCED STATISTICS USING SEPARATED STORES
 // =============================================================================
 
 const stats = computed(() => [
   {
     label: 'Totalt kontakter',
-    value: customerStore.totalContactPersons.toString()
+    value: contactStore.totalContacts.toString()
   },
   {
     label: 'Huvudkontakter',
-    value: customerStore.contactPersons.filter(cp => cp.isMainContact).length.toString()
+    value: contactStore.mainContacts.length.toString()
   },
   {
     label: 'Kunder med kontakter',
-    value: new Set(customerStore.contactPersons.map(cp => cp.customerId)).size.toString()
+    value: new Set(contactStore.contacts.map(cp => cp.customerId)).size.toString()
   },
   {
     label: 'Kunder utan huvudkontakt',
-    value: customerStore.customersWithoutMainContact.length.toString()
+    value: customersWithoutMainContact.value.length.toString()
   }
 ])
 
@@ -146,7 +150,7 @@ function sendEmail(contact: any) {
 
 async function deleteContact(contact: any) {
   try {
-    const result = await customerStore.removeContactPerson(contact.id)
+    const result = await contactStore.removeContact(contact.id)
     
     if (result.success) {
       console.log('Contact deleted successfully')
@@ -162,11 +166,11 @@ async function deleteContact(contact: any) {
 // ENHANCED FILTERING LOGIC
 // =============================================================================
 
-// Get contacts by department
+// Get contacts by department (using company as department since department field doesn't exist)
 const contactsByDepartment = computed(() => {
   const departments = new Map()
-  customerStore.contactPersons.forEach(contact => {
-    const dept = contact.department || 'Okänd'
+  contactStore.contacts.forEach(contact => {
+    const dept = contact.company || 'Okänd'
     if (!departments.has(dept)) {
       departments.set(dept, [])
     }
@@ -176,18 +180,21 @@ const contactsByDepartment = computed(() => {
 })
 
 // Get customers missing main contacts
-const customersNeedingMainContact = computed(() => 
-  customerStore.customersWithoutMainContact
-)
+const customersWithoutMainContact = computed(() => {
+  return customerStore.customers.filter(customer => {
+    const mainContact = contactStore.getMainContactByCustomerId(customer.id)
+    return !mainContact
+  })
+})
 </script>
 
 <template>
   <div class="w-full">
     <!-- Store Error Display -->
-    <div v-if="customerStore.error" class="mb-4 p-4 bg-red-50 border border-red-200 rounded">
-      <div class="text-red-800">{{ customerStore.error }}</div>
+    <div v-if="customerStore.error || contactStore.error" class="mb-4 p-4 bg-red-50 border border-red-200 rounded">
+      <div class="text-red-800">{{ customerStore.error || contactStore.error }}</div>
       <button 
-        @click="customerStore.clearError()" 
+        @click="customerStore.clearError(); contactStore.clearError()" 
         class="mt-2 text-sm text-red-600 hover:text-red-800"
       >
         Stäng
@@ -195,7 +202,7 @@ const customersNeedingMainContact = computed(() =>
     </div>
 
     <!-- Loading State -->
-    <div v-if="customerStore.loading" class="text-center py-8">
+    <div v-if="customerStore.loading || contactStore.loading" class="text-center py-8">
       <div class="text-gray-600">Laddar kontaktdata...</div>
     </div>
 
@@ -239,7 +246,7 @@ const customersNeedingMainContact = computed(() =>
       <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 px-6">
         <!-- Department Distribution -->
         <div class="bg-white p-4 rounded-lg border">
-          <h3 class="text-sm font-medium text-gray-500 mb-3">Kontakter per avdelning</h3>
+          <h3 class="text-sm font-medium text-gray-500 mb-3">Kontakter per företag</h3>
           <div class="space-y-2">
             <div 
               v-for="[department, contacts] in contactsByDepartment" 
@@ -257,7 +264,7 @@ const customersNeedingMainContact = computed(() =>
           <h3 class="text-sm font-medium text-gray-500 mb-3">Kunder utan huvudkontakt</h3>
           <div class="space-y-2 max-h-40 overflow-y-auto">
             <div 
-              v-for="customer in customersNeedingMainContact" 
+              v-for="customer in customersWithoutMainContact" 
               :key="customer.id"
               class="text-xs"
             >
@@ -268,7 +275,7 @@ const customersNeedingMainContact = computed(() =>
                 {{ customer.companyName }}
               </button>
             </div>
-            <div v-if="customersNeedingMainContact.length === 0" class="text-xs text-gray-500">
+            <div v-if="customersWithoutMainContact.length === 0" class="text-xs text-gray-500">
               Alla kunder har huvudkontakt
             </div>
           </div>
@@ -279,8 +286,8 @@ const customersNeedingMainContact = computed(() =>
           <h3 class="text-sm font-medium text-gray-500 mb-3">Snabbåtgärder</h3>
           <div class="space-y-2">
             <button 
-              @click="customerStore.fetchContactPersons()"
-              :disabled="customerStore.loading"
+              @click="contactStore.fetchContacts()"
+              :disabled="contactStore.loading"
               class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded hover:bg-blue-200 disabled:opacity-50 block w-full"
             >
               Uppdatera kontaktdata
@@ -292,7 +299,7 @@ const customersNeedingMainContact = computed(() =>
               Visa kundlista
             </button>
             <button 
-              @click="customerStore.resetStore()"
+              @click="contactStore.resetStore()"
               class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded hover:bg-gray-200 block w-full"
             >
               Återställ filter
@@ -308,23 +315,23 @@ const customersNeedingMainContact = computed(() =>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-blue-700">
             <div>
               <div class="font-medium">Genomsnittligt antal kontakter per kund:</div>
-              <div>{{ customerStore.totalCustomers > 0 ? (customerStore.totalContactPersons / customerStore.totalCustomers).toFixed(1) : '0' }}</div>
+              <div>{{ customerStore.totalCustomers > 0 ? (contactStore.totalContacts / customerStore.totalCustomers).toFixed(1) : '0' }}</div>
             </div>
             <div>
               <div class="font-medium">Företag med flest kontakter:</div>
               <div>{{ customerStore.customers.length > 0 ? customerStore.customers.reduce((max, customer) => {
-                const contactCount = customerStore.getContactPersonsByCustomerId(customer.id).length
-                const maxContactCount = customerStore.getContactPersonsByCustomerId(max.id).length
+                const contactCount = contactStore.getContactCountByCustomerId(customer.id)
+                const maxContactCount = contactStore.getContactCountByCustomerId(max.id)
                 return contactCount > maxContactCount ? customer : max
               }).companyName : 'Ingen' }}</div>
             </div>
             <div>
               <div class="font-medium">Senast uppdaterad:</div>
-              <div>{{ customerStore.lastUpdated ? new Date(customerStore.lastUpdated).toLocaleDateString('sv-SE') : 'Okänd' }}</div>
+              <div>{{ contactStore.lastUpdated ? new Date(contactStore.lastUpdated).toLocaleDateString('sv-SE') : 'Okänd' }}</div>
             </div>
             <div>
               <div class="font-medium">Aktiv datakvalitet:</div>
-              <div>{{ customerStore.customersWithoutMainContact.length === 0 ? '✅ Bra' : '⚠️ Behöver åtgärd' }}</div>
+              <div>{{ customersWithoutMainContact.length === 0 ? '✅ Bra' : '⚠️ Behöver åtgärd' }}</div>
             </div>
           </div>
         </div>

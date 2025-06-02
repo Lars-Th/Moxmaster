@@ -6,7 +6,8 @@ import { useNotifications } from '@/composables/useNotifications'
 import { Building2, User, Mail, Phone } from 'lucide-vue-next'
 import StandardHeader from '@/components/custom/StandardHeader.vue'
 import StatusNotification from '@/components/custom/StatusNotification.vue'
-import { useCustomerStorage, type Customer, type ContactPerson } from '@/storages/CustomerStorage'
+import { useCustomerStorage, type Customer } from '@/storages/CustomerStorage'
+import { useContactStorage, type Contact } from '@/storages/contactStorage'
 import { Separator } from '@/components/ui/separator'
 
 interface BreadcrumbItem {
@@ -19,13 +20,14 @@ const route = useRoute()
 const router = useRouter()
 const { success: notificationSuccess, error: notificationError, confirm } = useNotifications()
 const customerStore = useCustomerStorage()
+const contactStore = useContactStorage()
 
 // =============================================================================
-// REACTIVE DATA USING CUSTOMER STORE
+// REACTIVE DATA USING SEPARATED STORES
 // =============================================================================
 
 // Get contact person data
-const contact = computed(() => customerStore.getContactPersonById(Number(route.params.id)))
+const contact = computed(() => contactStore.getContactById(Number(route.params.id)))
 
 // Get the customer this contact belongs to
 const customer = computed(() => {
@@ -36,14 +38,14 @@ const customer = computed(() => {
 // Get other contacts from the same customer
 const relatedContacts = computed(() => {
   if (!contact.value) return []
-  return customerStore.getContactPersonsByCustomerId(contact.value.customerId)
+  return contactStore.getContactsByCustomerId(contact.value.customerId)
     .filter(c => c.id !== contact.value!.id)
 })
 
 // Get main contact for this customer
 const customerMainContact = computed(() => {
   if (!contact.value) return null
-  return customerStore.getMainContactByCustomerId(contact.value.customerId)
+  return contactStore.getMainContactByCustomerId(contact.value.customerId)
 })
 
 // Functional breadcrumbs
@@ -58,13 +60,13 @@ const actionButtons = computed(() => [
   {
     label: 'Spara nu',
     onClick: saveChanges,
-    disabled: !hasChanges.value || customerStore.loading,
+    disabled: !hasChanges.value || contactStore.loading,
     class: 'text-xs h-8'
   },
   {
     label: 'Återställ',
     onClick: resetChanges,
-    disabled: !hasChanges.value || customerStore.loading,
+    disabled: !hasChanges.value || contactStore.loading,
     variant: 'outline' as const,
     class: 'text-xs h-8'
   },
@@ -82,7 +84,7 @@ const actionButtons = computed(() => [
   }
 ])
 
-const editedContact = ref<ContactPerson | null>(contact.value ? { ...contact.value } : null)
+const editedContact = ref<Contact | null>(contact.value ? { ...contact.value } : null)
 const hasChanges = ref(false)
 const showSaveConfirmation = ref(false)
 
@@ -137,8 +139,8 @@ const saveChanges = async () => {
         }
       }
 
-      // Update contact using store
-      const result = await customerStore.updateContactPerson(editedContact.value)
+      // Update contact using contact store
+      const result = await contactStore.updateContact(editedContact.value)
       
       if (result.success) {
         hasChanges.value = false
@@ -193,400 +195,373 @@ const setAsMainContact = async () => {
   if (!contact.value || !customer.value) return
   
   try {
-    const result = await customerStore.setMainContact(customer.value.id, contact.value.id)
+    const result = await contactStore.setMainContact(customer.value.id, contact.value.id)
     
     if (result.success) {
       notificationSuccess('Huvudkontakt angiven', `${contact.value.name} har angetts som huvudkontakt för ${customer.value.companyName}.`)
     } else {
-      notificationError('Fel vid ändring', result.error || 'Kunde inte ange som huvudkontakt.')
+      notificationError('Fel vid uppdatering', result.error || 'Kunde inte ange huvudkontakt.')
     }
-  } catch (error) {
-    notificationError('Fel vid ändring', 'Ett oväntat fel inträffade vid ändring av huvudkontakt.')
+  } catch (err) {
+    notificationError('Fel vid uppdatering', 'Ett oväntat fel inträffade. Försök igen.')
   }
 }
 
 const deleteContact = async () => {
-  if (!contact.value) return
+  if (!contact.value || !customer.value) return
   
   const confirmed = await confirm(
-    'Ta bort kontaktperson',
-    `Är du säker på att du vill ta bort ${contact.value.name}? Detta kan inte ångras.`,
-    {
-      confirmText: 'Ta bort',
-      cancelText: 'Avbryt',
-      confirmVariant: 'destructive'
-    }
+    'Bekräfta borttagning',
+    `Är du säker på att du vill ta bort kontaktpersonen ${contact.value.name}? Denna åtgärd kan inte ångras.`
   )
-
+  
   if (confirmed) {
     try {
-      const result = await customerStore.removeContactPerson(contact.value.id)
+      const result = await contactStore.removeContact(contact.value.id)
       
       if (result.success) {
-        notificationSuccess('Kontaktperson borttagen', `${contact.value.name} har tagits bort.`)
+        notificationSuccess('Kontakt borttagen', `${contact.value.name} har tagits bort.`)
         router.push('/contacts')
       } else {
-        notificationError('Fel vid borttagning', result.error || 'Kunde inte ta bort kontaktperson.')
+        notificationError('Fel vid borttagning', result.error || 'Kunde inte ta bort kontakten.')
       }
-    } catch (error) {
-      notificationError('Fel vid borttagning', 'Ett oväntat fel inträffade vid borttagning av kontaktperson.')
+    } catch (err) {
+      notificationError('Fel vid borttagning', 'Ett oväntat fel inträffade. Försök igen.')
     }
   }
 }
 
-const sendEmail = () => {
-  if (contact.value?.email) {
-    window.location.href = `mailto:${contact.value.email}`
-  }
-}
-
-const callContact = () => {
-  if (contact.value?.phone) {
-    window.location.href = `tel:${contact.value.phone}`
-  }
-}
-
 // =============================================================================
-// ERROR HANDLING
+// COMPUTED PROPERTIES FOR DISPLAY
 // =============================================================================
 
-const clearStoreError = () => {
-  customerStore.clearError()
-}
+const contactStats = computed(() => [
+  {
+    label: 'Status',
+    value: contact.value?.status || 'Okänd'
+  },
+  {
+    label: 'Typ',
+    value: contact.value?.isMainContact ? 'Huvudkontakt' : 'Kontakt'
+  },
+  {
+    label: 'Företag',
+    value: customer.value?.companyName || 'Okänt'
+  },
+  {
+    label: 'Andra kontakter',
+    value: relatedContacts.value.length.toString()
+  }
+])
+
+// =============================================================================
+// WATCHERS
+// =============================================================================
+
+// Watch for changes in the contact data
+import { watch } from 'vue'
+
+watch(contact, (newContact) => {
+  if (newContact && !editedContact.value) {
+    editedContact.value = { ...newContact }
+  }
+}, { immediate: true })
 </script>
 
 <template>
   <div class="w-full">
     <!-- Store Error Display -->
-    <div v-if="customerStore.error" class="mb-4">
-      <StatusNotification
-        type="error"
-        :title="customerStore.error"
-        message="Ett fel inträffade vid hantering av kontaktdata."
-        :show="true"
-        @close="clearStoreError"
-      />
+    <div v-if="customerStore.error || contactStore.error" class="mb-4 p-4 bg-red-50 border border-red-200 rounded">
+      <div class="text-red-800">{{ customerStore.error || contactStore.error }}</div>
+      <button 
+        @click="customerStore.clearError(); contactStore.clearError()" 
+        class="mt-2 text-sm text-red-600 hover:text-red-800"
+      >
+        Stäng
+      </button>
     </div>
 
     <!-- Loading State -->
-    <div v-if="customerStore.loading" class="text-center py-8">
-      <div class="text-gray-600">Laddar kontaktuppgifter...</div>
+    <div v-if="customerStore.loading || contactStore.loading" class="text-center py-8">
+      <div class="text-gray-600">Laddar kontaktdata...</div>
+    </div>
+
+    <!-- Contact Not Found -->
+    <div v-else-if="!contact" class="text-center py-8">
+      <div class="text-gray-600">Kontaktpersonen kunde inte hittas.</div>
+      <button 
+        @click="goBack"
+        class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+      >
+        Tillbaka till kontaktlista
+      </button>
     </div>
 
     <!-- Main Content -->
-    <div v-else-if="contact">
-      <!-- Standard Header -->
-      <StandardHeader
-        :title="contact.name"
-        :breadcrumbs="breadcrumbs"
-        :show-stats="true"
-        :stats="[
-          { label: 'Titel', value: contact.title },
-          { label: 'Avdelning', value: contact.department },
-          { label: 'Status', value: contact.isMainContact ? 'Huvudkontakt' : 'Kontakt' }
-        ]"
-      />
-
-      <!-- Save confirmation -->
+    <div v-else>
+      <!-- Save Confirmation -->
       <StatusNotification
         v-if="showSaveConfirmation"
         type="success"
-        title="Ändningar sparade"
+        title="Ändringarna sparade"
         message="Kontaktuppgifterna har uppdaterats framgångsrikt."
         :show="showSaveConfirmation"
         @close="showSaveConfirmation = false"
       />
 
-      <!-- Action Bar -->
-      <div class="flex justify-end gap-2 px-6 py-4">
-        <button
-          v-for="button in actionButtons"
-          :key="button.label"
-          :class="[
-            'px-4 py-2 rounded text-sm font-medium transition-colors',
-            button.variant === 'outline' 
-              ? 'border border-gray-300 text-gray-700 hover:bg-gray-50' 
-              : 'bg-blue-600 text-white hover:bg-blue-700',
-            button.disabled ? 'opacity-50 cursor-not-allowed' : '',
-            button.class || ''
-          ]"
-          :disabled="button.disabled"
-          @click="button.onClick"
-        >
-          {{ button.label }}
-        </button>
-      </div>
+      <!-- Standard Header -->
+      <StandardHeader
+        :title="contact.name"
+        :breadcrumbs="breadcrumbs"
+        :description="`Kontaktdetaljer för ${contact.name} på ${customer?.companyName || 'Okänt företag'}`"
+        :show-stats="true"
+        :stats="contactStats"
+        :action-buttons="actionButtons"
+      />
 
-      <!-- Contact Information Tabs -->
-      <Tabs default-value="general" class="w-full mt-6 p-6">
-        <TabsList class="grid w-full grid-cols-3">
-          <TabsTrigger value="general" class="flex items-center gap-2">
-            <User class="h-4 w-4" />
-            Allmänt
-          </TabsTrigger>
-          <TabsTrigger value="communication" class="flex items-center gap-2">
-            <Mail class="h-4 w-4" />
-            Kommunikation
-          </TabsTrigger>
-          <TabsTrigger value="company" class="flex items-center gap-2">
-            <Building2 class="h-4 w-4" />
-            Företagsinformation
-          </TabsTrigger>
-        </TabsList>
+      <!-- Main Content Tabs -->
+      <div class="px-6">
+        <Tabs default-value="general" class="w-full">
+          <TabsList class="grid w-full grid-cols-3">
+            <TabsTrigger value="general">
+              <User class="w-4 h-4 mr-2" />
+              Allmänt
+            </TabsTrigger>
+            <TabsTrigger value="company">
+              <Building2 class="w-4 h-4 mr-2" />
+              Företag
+            </TabsTrigger>
+            <TabsTrigger value="related">
+              <Mail class="w-4 h-4 mr-2" />
+              Relaterat
+            </TabsTrigger>
+          </TabsList>
 
-        <!-- General Information Tab -->
-        <TabsContent value="general" class="mt-6">
-          <div v-if="editedContact" class="space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <!-- Name -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Fullständigt namn *
-                </label>
-                <input
-                  v-model="editedContact.name"
-                  type="text"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  @input="handleFieldChange"
-                  @blur="handleFieldBlur('name')"
-                />
-              </div>
-
-              <!-- Title -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Titel
-                </label>
-                <input
-                  v-model="editedContact.title"
-                  type="text"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  @input="handleFieldChange"
-                />
-              </div>
-
-              <!-- Department -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Avdelning
-                </label>
-                <input
-                  v-model="editedContact.department"
-                  type="text"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  @input="handleFieldChange"
-                />
-              </div>
-
-              <!-- Main Contact Status -->
-              <div>
-                <label class="flex items-center">
+          <!-- General Tab -->
+          <TabsContent value="general" class="space-y-6">
+            <div v-if="editedContact" class="bg-white p-6 rounded-lg border">
+              <h3 class="text-lg font-semibold mb-4">Kontaktinformation</h3>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Name -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Fullständigt namn *
+                  </label>
                   <input
-                    v-model="editedContact.isMainContact"
-                    type="checkbox"
-                    class="mr-2"
-                    @change="handleFieldChange"
+                    v-model="editedContact.name"
+                    @input="handleFieldChange"
+                    @blur="handleFieldBlur('name')"
+                    type="text"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Ange fullständigt namn"
                   />
-                  <span class="text-sm font-medium text-gray-700">Huvudkontakt</span>
-                </label>
-              </div>
-            </div>
-          </div>
-        </TabsContent>
+                </div>
 
-        <!-- Communication Tab -->
-        <TabsContent value="communication" class="mt-6">
-          <div v-if="editedContact" class="space-y-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <!-- Email -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  E-postadress
-                </label>
-                <div class="flex">
+                <!-- Email -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    E-postadress
+                  </label>
                   <input
                     v-model="editedContact.email"
-                    type="email"
-                    class="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     @input="handleFieldChange"
                     @blur="handleFieldBlur('email')"
+                    type="email"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="namn@företag.se"
                   />
-                  <button
-                    @click="sendEmail"
-                    :disabled="!editedContact.email"
-                    class="px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-md hover:bg-gray-200 disabled:opacity-50"
+                </div>
+
+                <!-- Phone -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Telefonnummer
+                  </label>
+                  <input
+                    v-model="editedContact.phone"
+                    @input="handleFieldChange"
+                    type="tel"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="070-123 45 67"
+                  />
+                </div>
+
+                <!-- Status -->
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Status
+                  </label>
+                  <select
+                    v-model="editedContact.status"
+                    @change="handleFieldChange"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <Mail class="h-4 w-4" />
-                  </button>
+                    <option value="Aktiv">Aktiv</option>
+                    <option value="Inaktiv">Inaktiv</option>
+                  </select>
                 </div>
               </div>
 
-              <!-- Phone -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Telefonnummer
-                </label>
-                <div class="flex">
+              <!-- Main Contact Toggle -->
+              <div class="mt-6">
+                <div class="flex items-center space-x-3">
                   <input
-                    v-model="editedContact.phone"
-                    type="tel"
-                    class="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    @input="handleFieldChange"
+                    v-model="editedContact.isMainContact"
+                    @change="handleFieldChange"
+                    type="checkbox"
+                    id="isMainContact"
+                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
+                  <label for="isMainContact" class="text-sm font-medium text-gray-700">
+                    Huvudkontakt för företaget
+                  </label>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">
+                  Endast en huvudkontakt per företag är tillåten
+                </p>
+              </div>
+            </div>
+          </TabsContent>
+
+          <!-- Company Tab -->
+          <TabsContent value="company" class="space-y-6">
+            <div class="bg-white p-6 rounded-lg border">
+              <h3 class="text-lg font-semibold mb-4">Företagsinformation</h3>
+              
+              <div v-if="customer" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Företagsnamn</label>
+                    <div class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-gray-600">
+                      {{ customer.companyName }}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Ort</label>
+                    <div class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-gray-600">
+                      {{ customer.city }}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <div class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-gray-600">
+                      <span :class="customer.status === 'Aktiv' ? 'text-green-600' : 'text-red-600'">
+                        {{ customer.status }}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Kundnummer</label>
+                    <div class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-gray-600">
+                      {{ customer.customerNumber }}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mt-6">
                   <button
-                    @click="callContact"
-                    :disabled="!editedContact.phone"
-                    class="px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-md hover:bg-gray-200 disabled:opacity-50"
+                    @click="viewCustomer"
+                    class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
                   >
-                    <Phone class="h-4 w-4" />
+                    Visa fullständig kundinformation
                   </button>
                 </div>
+              </div>
+              
+              <div v-else class="text-gray-500">
+                Företagsinformation kunde inte laddas.
+              </div>
+            </div>
+          </TabsContent>
+
+          <!-- Related Tab -->
+          <TabsContent value="related" class="space-y-6">
+            <div class="bg-white p-6 rounded-lg border">
+              <h3 class="text-lg font-semibold mb-4">Relaterade kontakter</h3>
+              
+              <div v-if="relatedContacts.length > 0" class="space-y-3">
+                <div 
+                  v-for="relatedContact in relatedContacts" 
+                  :key="relatedContact.id"
+                  class="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                >
+                  <div class="flex items-center space-x-3">
+                    <User class="w-5 h-5 text-gray-400" />
+                    <div>
+                      <div class="font-medium">{{ relatedContact.name }}</div>
+                      <div class="text-sm text-gray-500">
+                        {{ relatedContact.email }} • {{ relatedContact.phone }}
+                      </div>
+                      <div class="text-xs text-gray-400">
+                        {{ relatedContact.isMainContact ? 'Huvudkontakt' : 'Kontakt' }}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="flex space-x-2">
+                    <button
+                      @click="router.push(`/contacts/${relatedContact.id}`)"
+                      class="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
+                    >
+                      Visa
+                    </button>
+                    <button
+                      @click="() => { (window as any).location.href = `mailto:${relatedContact.email}` }"
+                      class="px-3 py-1 text-xs bg-green-100 text-green-800 rounded hover:bg-green-200"
+                    >
+                      E-post
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <div v-else class="text-gray-500 text-center py-8">
+                Inga andra kontakter för detta företag.
               </div>
             </div>
 
             <!-- Quick Actions -->
-            <div class="flex gap-4 pt-4">
-              <button
-                @click="sendEmail"
-                :disabled="!editedContact.email"
-                class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-              >
-                <Mail class="h-4 w-4" />
-                Skicka e-post
-              </button>
-              <button
-                @click="callContact"
-                :disabled="!editedContact.phone"
-                class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
-              >
-                <Phone class="h-4 w-4" />
-                Ring
-              </button>
-            </div>
-          </div>
-        </TabsContent>
-
-        <!-- Company Information Tab -->
-        <TabsContent value="company" class="mt-6">
-          <div v-if="customer" class="space-y-6">
-            <div class="bg-gray-50 p-4 rounded-lg">
-              <h3 class="text-lg font-semibold mb-4">Företagsinformation</h3>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <span class="text-sm font-medium text-gray-500">Företag:</span>
-                  <p class="text-sm font-medium">{{ customer.companyName }}</p>
-                </div>
-                <div>
-                  <span class="text-sm font-medium text-gray-500">Ort:</span>
-                  <p class="text-sm">{{ customer.city }}</p>
-                </div>
-                <div>
-                  <span class="text-sm font-medium text-gray-500">Status:</span>
-                  <span :class="[
-                    'inline-flex px-2 py-1 text-xs font-medium rounded',
-                    customer.status === 'Aktiv' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                  ]">
-                    {{ customer.status }}
-                  </span>
-                </div>
-                <div>
-                  <span class="text-sm font-medium text-gray-500">Typ:</span>
-                  <p class="text-sm">{{ customer.companyType }}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
-
-      <!-- Contact Actions Section -->
-      <div class="mt-12">
-        <Separator class="mb-6" />
-        <div class="px-6">
-          <h2 class="text-lg font-semibold mb-4">Åtgärder</h2>
-          <div class="flex gap-4">
-            <button
-              v-if="!contact.isMainContact"
-              @click="setAsMainContact"
-              class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              Ange som huvudkontakt
-            </button>
-            <button
-              @click="deleteContact"
-              class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-            >
-              Ta bort kontakt
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Related Contacts Section -->
-      <div v-if="relatedContacts.length > 0" class="mt-8">
-        <Separator class="mb-6" />
-        <div class="px-6">
-          <h2 class="text-lg font-semibold mb-4">Andra kontakter från samma företag</h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div
-              v-for="relatedContact in relatedContacts"
-              :key="relatedContact.id"
-              class="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
-              @click="router.push(`/contacts/${relatedContact.id}`)"
-            >
-              <div class="flex items-start justify-between">
-                <div>
-                  <h3 class="font-medium">{{ relatedContact.name }}</h3>
-                  <p class="text-sm text-gray-600">{{ relatedContact.title }}</p>
-                  <p class="text-sm text-gray-500">{{ relatedContact.department }}</p>
-                </div>
-                <span
-                  v-if="relatedContact.isMainContact"
-                  class="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded"
+            <div class="bg-white p-6 rounded-lg border">
+              <h3 class="text-lg font-semibold mb-4">Snabbåtgärder</h3>
+              
+              <div class="flex flex-wrap gap-3">
+                <button
+                  v-if="!contact.isMainContact"
+                  @click="setAsMainContact"
+                  class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
                 >
-                  Huvudkontakt
-                </span>
-              </div>
-              <div class="mt-2 space-y-1">
-                <p class="text-xs text-gray-500">{{ relatedContact.email }}</p>
-                <p class="text-xs text-gray-500">{{ relatedContact.phone }}</p>
+                  Ange som huvudkontakt
+                </button>
+                
+                <button
+                  @click="() => { (window as any).location.href = `mailto:${contact.email}` }"
+                  class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                >
+                  Skicka e-post
+                </button>
+                
+                <button
+                  @click="() => { (window as any).location.href = `tel:${contact.phone}` }"
+                  class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm"
+                >
+                  Ring upp
+                </button>
+                
+                <button
+                  @click="deleteContact"
+                  class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
+                >
+                  Ta bort kontakt
+                </button>
               </div>
             </div>
-          </div>
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
-
-      <!-- Contact Statistics -->
-      <div class="mt-8 p-4 bg-gray-50 rounded-lg">
-        <h3 class="font-semibold mb-2">Kontaktstatistik</h3>
-        <div class="grid grid-cols-3 gap-4 text-sm">
-          <div>
-            <span class="text-gray-600">Kontakter från samma företag:</span>
-            <span class="ml-2 font-medium">{{ relatedContacts.length + 1 }}</span>
-          </div>
-          <div>
-            <span class="text-gray-600">Är huvudkontakt:</span>
-            <span class="ml-2 font-medium">{{ contact.isMainContact ? 'Ja' : 'Nej' }}</span>
-          </div>
-          <div>
-            <span class="text-gray-600">Senast uppdaterad:</span>
-            <span class="ml-2 font-medium">
-              {{ customerStore.lastUpdated ? new Date(customerStore.lastUpdated).toLocaleDateString('sv-SE') : 'Okänd' }}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Contact Not Found -->
-    <div v-else class="text-center py-8">
-      <div class="text-gray-600">Kontaktpersonen kunde inte hittas.</div>
-      <button 
-        @click="goBack" 
-        class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-      >
-        Tillbaka till kontaktlista
-      </button>
     </div>
   </div>
 </template> 
